@@ -1,0 +1,18 @@
+[package]
+name = "api_dolar"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.1"
+tokio = { version = "1.43.0", features = ["full"] }
+reqwest = { version = "0.12.12", features = ["json"] }
+scraper = "0.22.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4.44"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+dotenvy = "0.15.7"
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+rust_decimal = "1.40.0"

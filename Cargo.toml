@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "apex-core",
+    "apex-ui",
+    "api_dolar"
+]
+resolver = "2"

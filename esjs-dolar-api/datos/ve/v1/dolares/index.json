@@ -1,0 +1,18 @@
+[
+  {
+    "fuente": "oficial",
+    "nombre": "Oficial",
+    "compra": null,
+    "venta": null,
+    "promedio": 438.205,
+    "fechaActualizacion": "2026-03-11T21:01:21.020Z"
+  },
+  {
+    "fuente": "paralelo",
+    "nombre": "Paralelo",
+    "compra": null,
+    "venta": null,
+    "promedio": 627.3,
+    "fechaActualizacion": "2026-03-11T21:01:20.236Z"
+  }
+]

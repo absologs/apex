@@ -1,0 +1,19 @@
+[package]
+name = "apex-ui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+apex-core = { version = "0.1.0", path = "../apex-core" }
+rust_decimal = "1.40.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+csv = "1.4.0"
+tauri = "2"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+tauri-plugin-dialog = "2.6.0"
+rfd = "0.17.2"
+
+[build-dependencies]
+tauri-build = "2"

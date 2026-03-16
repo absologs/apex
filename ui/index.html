@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es" class="bg-[#0D0D0D] text-gray-300 h-screen w-screen overflow-hidden flex flex-col">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX | Terminal Táctica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        * {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] text-gray-300 h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- 1. Top Bar -->
+    <div class="bg-[#0D0D0D] border-b border-white/10 px-6 py-3 flex justify-between items-center text-xs font-mono shrink-0">
+        <div class="flex items-center gap-8">
+            <span class="bg-[#ADFA1D] text-black px-2 py-0.5 font-bold tracking-tight">APEX</span>
+            
+            <nav class="flex gap-5 tracking-[0.1em] uppercase text-[10px]">
+                <a href="#" onclick="switchTab(event, 'view-resumen')" class="nav-link text-white relative after:content-[''] after:absolute after:-bottom-[13px] after:left-0 after:w-full after:h-[2px] after:bg-[#ADFA1D]">Resumen</a>
+                <a href="#" onclick="switchTab(event, 'view-warroom')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">War Room</a>
+                <a href="#" onclick="switchTab(event, 'view-radar')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">El Radar</a>
+                <a href="#" onclick="switchTab(event, 'view-cadena')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">La Cadena</a>
+                <a href="#" onclick="switchTab(event, 'view-ingesta')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">Ingesta</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-4 text-gray-400 text-[10px] tracking-widest">
+            <span>TASA_BCV <span id="tasa-bcv-value" class="text-[#ADFA1D] tabular-nums font-bold">---</span></span>
+            <button id="btn-sync" onclick="syncTasa()" class="border border-white/20 px-3 py-1 hover:bg-white/5 transition-colors cursor-pointer">SYNC</button>
+            <button class="border border-[#ADFA1D]/30 text-[#ADFA1D] bg-[#ADFA1D]/5 px-4 py-1 hover:bg-[#ADFA1D]/20 transition-colors">OP</button>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL DE VISTAS -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- VISTA: RESUMEN (Por defecto) -->
+        <div id="view-resumen" class="tab-view flex flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D]">
+            <!-- Fila de Métricas -->
+            <div class="grid grid-cols-4 bg-[#0A0A0C] border-b border-white/10 shrink-0">
+                <div class="border-r border-white/10 p-4 flex flex-col">
+                    <span class="text-gray-400 font-mono text-xs mb-2">INGRESO TOTAL</span>
+                    <span id="metric-ingreso" class="text-gray-100 font-mono text-3xl">$0.00</span>
+                </div>
+                <div class="border-r border-white/10 p-4 flex flex-col">
+                    <span class="text-gray-400 font-mono text-xs mb-2">TASA PROMEDIO</span>
+                    <span id="metric-tasa" class="text-gray-100 font-mono text-3xl">0.00</span>
+                </div>
+                <div class="border-r border-white/10 p-4 flex flex-col">
+                    <span class="text-gray-400 font-mono text-xs mb-2">VENTAS HOY</span>
+                    <span id="metric-ventas" class="text-gray-100 font-mono text-3xl">0</span>
+                </div>
+                <div class="border-r border-white/10 p-4 flex flex-col">
+                    <span class="text-gray-400 font-mono text-xs mb-2">SALUD H(T)</span>
+                    <span id="metric-salud" class="text-[#ADFA1D] font-mono text-3xl">0.00</span>
+                </div>
+            </div>
+
+            <!-- Zona Inferior -->
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Lado Izquierdo (Matriz Proyección / Gráfico) -->
+                <div class="w-3/4 bg-[#0D0D0D] p-6 relative flex flex-col">
+                    <div class="text-gray-400 font-mono text-xs mb-6 absolute top-6 left-6">MATRIZ DE PROYECCIÓN // VOLUMEN</div>
+                    
+                    <div class="flex-1 flex items-end justify-around relative border-b border-white/10 border-l border-white/10 ml-8 mt-12 pb-0">
+                        <!-- Eje Y -->
+                        <div class="absolute -left-10 top-0 bottom-0 flex flex-col justify-between text-gray-500 font-mono text-xs py-2">
+                            <span>MAX</span>
+                            <span>...</span>
+                            <span>0</span>
+                        </div>
+                        
+                        <!-- Barras del gráfico (vacías por defecto en estado 0) -->
+                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
+                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-4</span>
+                        </div>
+                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
+                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-3</span>
+                        </div>
+                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
+                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-2</span>
+                        </div>
+                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
+                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-1</span>
+                        </div>
+                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
+                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-0</span>
+                        </div>
+                    </div>
+                    <div class="text-gray-500 font-mono text-xs mt-8 text-center">TIEMPO (T)</div>
+                </div>
+
+                <!-- Lado Derecho (Oráculo) -->
+                <div class="w-1/4 bg-[#0A0A0C] border-l border-white/10 p-6 flex flex-col relative justify-center items-center" id="panel-oraculo">
+                    <div class="absolute top-0 left-0 w-full px-4 py-2 border-b border-white/10 text-[9px] text-gray-500 uppercase tracking-[0.2em] font-mono">
+                        ORÁCULO
+                    </div>
+                    
+                    <div class="text-center flex flex-col items-center gap-4 w-full px-4 mt-8" id="oraculo-content">
+                        <div class="font-mono text-[10px] text-amber-500/70 text-left w-full border-l-2 border-amber-500/30 pl-2">
+                            > ERR_NO_DATA<br>
+                            > MATRIZ_OFFLINE
+                        </div>
+                        
+                        <button onclick="switchTab(null, 'view-ingesta')" class="mt-4 border border-dashed border-amber-500/50 text-amber-500 bg-amber-500/5 w-full py-3 font-mono text-xs uppercase tracking-[0.15em] hover:bg-amber-500/10 hover:border-amber-500 transition-all animate-pulse cursor-pointer">
+                            Iniciar Auditoría Cero
+                        </button>
+                        
+                        <p class="text-[9px] text-gray-600 font-mono mt-2 tracking-wide uppercase">
+                            El sistema requiere ingesta de datos transaccionales para inicializar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: WAR ROOM -->
+        <div id="view-warroom" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
+             <div class="flex-1 flex w-full border-white/10">
+                 <!-- Left Panel: Context -->
+                 <div class="w-1/3 border-r border-white/10 p-6 flex flex-col justify-between bg-[#0D0D0D]">
+                     <div>
+                         <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono mb-6">> TARGET_SKU</div>
+                         <select id="warroom-sku-select" class="w-full bg-[#0A0A0C] border border-white/20 text-[#ADFA1D] p-3 font-mono text-sm uppercase outline-none focus:border-[#ADFA1D]/50 transition-colors" onchange="loadWarroomSKU()">
+                             <option value="">-- SELECCIONE ACTIVO --</option>
+                             <!-- Dynamically loaded from inventory -->
+                         </select>
+
+                         <div class="mt-8 flex flex-col gap-4" id="warroom-sku-data">
+                             <div class="flex justify-between border-b border-white/5 pb-2">
+                                 <span class="text-xs text-gray-500 font-mono">Q_ACTUAL</span>
+                                 <span class="text-xs text-gray-300 font-mono" id="wr-qty">--</span>
+                             </div>
+                             <div class="flex justify-between border-b border-white/5 pb-2">
+                                 <span class="text-xs text-gray-500 font-mono">C_REPO (USD)</span>
+                                 <span class="text-xs text-gray-300 font-mono" id="wr-cost">--</span>
+                             </div>
+                             <div class="flex justify-between border-b border-white/5 pb-2">
+                                 <span class="text-xs text-gray-500 font-mono">P_FLOOR (LÍMITE)</span>
+                                 <span class="text-xs text-red-400 font-bold font-mono" id="wr-floor">--</span>
+                             </div>
+                         </div>
+                     </div>
+                     
+                     <button class="border border-white/10 text-gray-500 hover:text-white px-4 py-2 text-[10px] uppercase transition-colors cursor-pointer w-full mt-8" onclick="switchTab(null, 'view-resumen')">ABORTAR SIMULACIÓN</button>
+                 </div>
+
+                 <!-- Right Panel: Simulator -->
+                 <div class="w-2/3 p-10 flex flex-col justify-center items-center relative">
+                     <div class="absolute top-6 left-6 text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> SIMULADOR DE ELASTICIDAD</div>
+                     
+                     <!-- The Slider -->
+                     <div class="w-full max-w-md flex flex-col items-center">
+                         <div class="flex justify-between w-full mb-4 text-xs font-mono text-gray-400">
+                             <span>PRECIO SIMULADO</span>
+                             <span id="wr-sim-price" class="text-2xl text-white font-bold">$0.00</span>
+                         </div>
+                         
+                         <input type="range" id="wr-price-slider" class="w-full h-2 bg-white/10 rounded-none appearance-none cursor-pointer mb-8" min="0" max="100" value="50" step="0.01" oninput="updateSimulation()">
+                         
+                         <!-- The Traffic Light -->
+                         <div id="wr-traffic-light" class="w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300">
+                             <span id="wr-status-text" class="text-[#ADFA1D] text-sm">> ESTADO: RENTABLE (MARGEN SEGURO)</span>
+                         </div>
+
+                         <!-- The Projection Bar -->
+                         <div class="w-full mt-10">
+                             <div class="flex justify-between text-[10px] text-gray-500 font-mono mb-2">
+                                 <span>PROYECCIÓN DE VENTA REQUERIDA (∆V)</span>
+                                 <span id="wr-req-sales" class="text-white">0 Unidades</span>
+                             </div>
+                             <div class="w-full h-4 bg-white/5 relative overflow-hidden">
+                                 <div id="wr-sales-bar" class="h-full bg-white/20 transition-all duration-300 w-[0%]"></div>
+                             </div>
+                         </div>
+                         
+                         <button id="btn-apply-maneuver" class="mt-12 border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-8 py-3 font-mono text-xs uppercase transition-colors cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                             FIJAR PRECIO Y GENERAR REPORTE
+                         </button>
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+        <!-- VISTA: EL RADAR -->
+        <div id="view-radar" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D]">
+             <div class="flex-1 flex items-center justify-center">
+                 <div class="text-center font-mono flex flex-col items-center">
+                     <span class="text-gray-400 text-lg">> RADAR</span>
+                     <div class="text-gray-600 text-[10px] mt-4 uppercase tracking-widest animate-pulse">Buscando divergencias...</div>
+                 </div>
+             </div>
+        </div>
+
+        <!-- VISTA: LA CADENA -->
+        <div id="view-cadena" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
+             <div class="flex-1 flex items-center justify-center">
+                 <div class="text-center font-mono flex flex-col items-center">
+                     <span class="text-gray-400 text-lg">> CADENA DE BLOQUES</span>
+                     <div class="text-gray-600 text-[10px] mt-4 uppercase tracking-widest">Validando firmas SHA-256...</div>
+                 </div>
+             </div>
+        </div>
+
+        <!-- VISTA: INGESTA -->
+        <div id="view-ingesta" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D] overflow-y-auto">
+             <div class="flex-1 flex flex-col items-center p-10">
+                 
+                 <!-- Step 1: Selección -->
+                 <div id="ingest-step-1" class="border border-white/10 bg-[#0A0A0C] p-10 w-[500px] text-center flex flex-col items-center transition-all">
+                     <div class="text-amber-500 font-mono font-bold text-lg mb-2">> INGESTA TOPOLÓGICA</div>
+                     <p class="text-gray-400 text-xs mb-8 leading-relaxed font-mono">Conecte el origen de datos (Archivo estático o Base de Datos).</p>
+                     <button id="btn-select-source" onclick="selectDataSource()" class="border border-[#ADFA1D]/40 text-[#ADFA1D] bg-[#ADFA1D]/5 hover:bg-[#ADFA1D]/10 px-6 py-3 font-mono text-xs uppercase transition-colors w-full cursor-pointer">SELECCIONAR ORIGEN</button>
+                 </div>
+
+                 <!-- Step 2: Mapeo (Oculto por defecto) -->
+                 <div id="ingest-step-2" class="hidden border border-white/10 bg-[#0A0A0C] p-10 w-[800px] flex-col items-start transition-all mt-4">
+                     <div class="text-[#ADFA1D] font-mono font-bold text-lg mb-2">> ORÁCULO DE MAPEO</div>
+                     <p class="text-gray-400 text-xs mb-6 font-mono" id="mapping-status">Analizando topología estructural...</p>
+                     
+                     <div class="w-full grid grid-cols-2 gap-6 text-xs font-mono text-gray-300" id="schema-mapping-container">
+                         <!-- Dynamically populated -->
+                     </div>
+
+                     <div class="w-full mt-6 p-4 border border-red-500/20 bg-red-500/5 hidden" id="anomalies-container">
+                         <span class="text-red-500 font-bold">> ANOMALÍAS DETECTADAS</span>
+                         <ul id="anomalies-list" class="list-disc pl-5 mt-2 text-[10px] text-gray-400"></ul>
+                     </div>
+
+                     <div class="flex flex-col w-full mt-6 mb-4 items-start border border-white/5 p-4 bg-black/50">
+                         <label class="flex items-center gap-3 cursor-pointer">
+                             <input type="checkbox" id="chk-activate-sentinel" class="w-4 h-4 accent-[#ADFA1D] bg-black border-white/20">
+                             <span class="text-xs font-mono text-gray-300">ACTIVA CENTINELA (Sincronización Continua)</span>
+                         </label>
+                         <p class="text-[9px] text-gray-500 font-mono mt-2 ml-7">El oráculo vigilará este origen de datos y extraerá nuevos registros automáticamente en segundo plano.</p>
+                     </div>
+
+                     <div class="flex w-full justify-between mt-4">
+                         <button onclick="cancelIngestion()" class="text-gray-500 hover:text-white uppercase text-[10px]">Cancelar</button>
+                         <button id="btn-execute-ingestion" onclick="executeIngestion()" class="border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-6 py-2 font-mono text-xs uppercase transition-colors cursor-pointer hidden">INICIAR TRANSMUTACIÓN</button>
+                     </div>
+                 </div>
+
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Compatibilidad de invoke para Tauri v1 y v2
+        const invoke = window.__TAURI__ 
+            ? (window.__TAURI__.invoke || (window.__TAURI__.core ? window.__TAURI__.core.invoke : (window.__TAURI__.tauri ? window.__TAURI__.tauri.invoke : null)))
+            : async () => null;
+
+        const activeClasses = ['text-white', 'relative', 'after:content-[\'\']', 'after:absolute', 'after:-bottom-[13px]', 'after:left-0', 'after:w-full', 'after:h-[2px]', 'after:bg-[#ADFA1D]'];
+        const inactiveClasses = ['text-gray-500', 'hover:text-gray-300', 'transition-colors'];
+
+        function switchTab(event, viewId) {
+            if (event) event.preventDefault();
+            
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.classList.add('hidden');
+                view.classList.remove('flex');
+            });
+            
+            const targetView = document.getElementById(viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                targetView.classList.add('flex');
+            }
+
+            if (event && event.currentTarget) {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove(...activeClasses);
+                    link.classList.add(...inactiveClasses);
+                });
+
+                const activeLink = event.currentTarget;
+                activeLink.classList.remove(...inactiveClasses);
+                activeLink.classList.add(...activeClasses);
+            } else if (viewId === 'view-resumen') {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove(...activeClasses);
+                    link.classList.add(...inactiveClasses);
+                });
+                const resumenLink = document.querySelector('.nav-link');
+                if(resumenLink) {
+                     resumenLink.classList.remove(...inactiveClasses);
+                     resumenLink.classList.add(...activeClasses);
+                }
+            }
+
+            // Lazy Load data depending on tab
+            if (viewId === 'view-warroom') {
+                initWarRoom();
+            }
+        }
+
+        // --- LÓGICA DE SINCRONIZACIÓN Y ESTADO CERO --- //
+        
+        async function syncTasa() {
+            const btn = document.getElementById('btn-sync');
+            const rateEl = document.getElementById('tasa-bcv-value');
+            
+            btn.innerText = 'WAIT';
+            btn.classList.add('text-amber-500');
+            
+            try {
+                const rate = await invoke('sync_bcv_rate');
+                if (rate) {
+                    rateEl.innerText = parseFloat(rate).toFixed(2);
+                }
+            } catch (error) {
+                console.error("Error sync BCV:", error);
+                rateEl.innerText = "ERR";
+            } finally {
+                btn.innerText = 'SYNC';
+                btn.classList.remove('text-amber-500');
+            }
+        }
+
+        async function initInventory() {
+            try {
+                const inventory = await invoke('get_inventory');
+                if (!inventory || Object.keys(inventory).length === 0) return;
+
+                let totalValue = 0;
+                let totalItems = 0;
+
+                for (const [sku, tensores] of Object.entries(inventory)) {
+                    for (const tensor of tensores) {
+                        if(tensor.cost_usd) {
+                            totalValue += parseFloat(tensor.cost_usd) * parseFloat(tensor.current_quantity);
+                        }
+                        totalItems += 1;
+                    }
+                }
+
+                if (totalItems > 0) {
+                    document.getElementById('metric-ingreso').innerText = `$${totalValue.toFixed(2)}`;
+                    document.getElementById('metric-ventas').innerText = totalItems;
+                    document.getElementById('metric-salud').innerText = '1.00';
+                    
+                    document.getElementById('oraculo-content').innerHTML = `
+                        <div class="font-mono text-[10px] text-[#ADFA1D] text-left w-full border-l-2 border-[#ADFA1D]/30 pl-2">
+                            > MATRIZ_ONLINE<br>
+                            > TOPOLOGÍA_CARGADA
+                        </div>
+                        <p class="text-[9px] text-gray-600 font-mono mt-4 tracking-wide uppercase text-left w-full">
+                            SKUs Activos: ${Object.keys(inventory).length}
+                        </p>
+                    `;
+
+                    const barras = document.querySelectorAll('#view-resumen .w-16');
+                    if (barras.length === 5) {
+                        barras[0].style.height = '20%';
+                        barras[1].style.height = '35%';
+                        barras[2].style.height = '60%';
+                        barras[3].style.height = '80%';
+                        barras[4].style.height = '100%';
+                    }
+                }
+            } catch (e) {
+                console.error("Error al obtener inventario:", e);
+            }
+        }
+
+        // --- LÓGICA DE WAR ROOM (SIMULADOR) --- //
+        
+        let warroomInventoryData = {};
+        let activeSkuData = null;
+
+        async function initWarRoom() {
+            try {
+                warroomInventoryData = await invoke('get_inventory');
+                const select = document.getElementById('warroom-sku-select');
+                select.innerHTML = '<option value="">-- SELECCIONE ACTIVO --</option>';
+                
+                for (const sku in warroomInventoryData) {
+                    select.innerHTML += `<option value="${sku}">${sku}</option>`;
+                }
+            } catch (e) {
+                console.error("Error cargando inventario en War Room", e);
+            }
+        }
+
+        function loadWarroomSKU() {
+            const sku = document.getElementById('warroom-sku-select').value;
+            if (!sku || !warroomInventoryData[sku]) {
+                activeSkuData = null;
+                document.getElementById('wr-qty').innerText = '--';
+                document.getElementById('wr-cost').innerText = '--';
+                document.getElementById('wr-floor').innerText = '--';
+                document.getElementById('btn-apply-maneuver').disabled = true;
+                return;
+            }
+
+            // Agregamos lotes (LIFO/FIFO no importa para totales, pero sí para P_floor)
+            // Simplificación para V1: Tomamos el costo de reposición del lote más reciente
+            const lotes = warroomInventoryData[sku];
+            const activeLot = lotes[0]; // El lote más reciente
+            
+            let totalQty = 0;
+            lotes.forEach(l => { totalQty += parseFloat(l.current_quantity); });
+            
+            const costUsd = parseFloat(activeLot.cost_usd);
+            const pFloor = costUsd * 1.15; // 15% Prima de riesgo base estocástica (simplificada para demo UI)
+
+            activeSkuData = {
+                sku: sku,
+                qty: totalQty,
+                cost: costUsd,
+                pFloor: pFloor,
+                basePrice: costUsd > 0 ? costUsd * 1.40 : 10.0 // Simulamos un precio base de 40% margen
+            };
+
+            document.getElementById('wr-qty').innerText = totalQty;
+            document.getElementById('wr-cost').innerText = `$${costUsd.toFixed(2)}`;
+            document.getElementById('wr-floor').innerText = `$${pFloor.toFixed(2)}`;
+            
+            const slider = document.getElementById('wr-price-slider');
+            slider.min = (costUsd * 0.8).toFixed(2); // Permite bajar por debajo del costo (Riesgo)
+            slider.max = (activeSkuData.basePrice * 1.5).toFixed(2);
+            slider.value = activeSkuData.basePrice.toFixed(2);
+            
+            document.getElementById('btn-apply-maneuver').disabled = false;
+            updateSimulation();
+        }
+
+        function updateSimulation() {
+            if (!activeSkuData) return;
+            
+            const slider = document.getElementById('wr-price-slider');
+            const simPrice = parseFloat(slider.value);
+            
+            document.getElementById('wr-sim-price').innerText = `$${simPrice.toFixed(2)}`;
+            
+            const trafficLight = document.getElementById('wr-traffic-light');
+            const statusText = document.getElementById('wr-status-text');
+            const btnApply = document.getElementById('btn-apply-maneuver');
+            const salesBar = document.getElementById('wr-sales-bar');
+            const reqSalesTxt = document.getElementById('wr-req-sales');
+
+            // Lógica de elasticidad (simplificada para V1 UX)
+            // Si el margen baja, requerimos vender exponencialmente más para ganar la misma masa de dólares
+            const targetProfitDollar = (activeSkuData.basePrice - activeSkuData.cost) * (activeSkuData.qty * 0.1); // Asume que normalmente vendemos 10%
+            let reqVol = 0;
+            let barWidth = 0;
+
+            if (simPrice > activeSkuData.pFloor) {
+                // Sano o en advertencia leve
+                trafficLight.className = "w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300";
+                statusText.className = "text-[#ADFA1D] text-sm";
+                
+                if (simPrice < activeSkuData.basePrice) {
+                    statusText.innerText = "> ESTADO: TÁCTICO (MARGEN REDUCIDO)";
+                    const curProfit = simPrice - activeSkuData.cost;
+                    if(curProfit > 0) {
+                        reqVol = targetProfitDollar / curProfit;
+                    }
+                } else {
+                    statusText.innerText = "> ESTADO: RENTABLE (MARGEN SEGURO)";
+                    reqVol = targetProfitDollar / (simPrice - activeSkuData.cost);
+                }
+                
+                btnApply.disabled = false;
+                barWidth = Math.min((reqVol / activeSkuData.qty) * 100, 100);
+                salesBar.className = "h-full bg-[#ADFA1D] transition-all duration-300";
+
+            } else {
+                // Riesgo de Ruina (Debajo de P_floor)
+                trafficLight.className = "w-full p-4 border border-red-500/50 bg-red-500/10 text-center font-mono transition-colors duration-300 animate-pulse";
+                statusText.className = "text-red-500 text-sm font-bold";
+                statusText.innerText = "> PELIGRO: PERFORACIÓN DE P_FLOOR (RIESGO DE RUINA)";
+                
+                btnApply.disabled = true;
+                reqVol = Infinity;
+                barWidth = 100;
+                salesBar.className = "h-full bg-red-500 transition-all duration-300";
+            }
+            
+            if (reqVol === Infinity || reqVol < 0) {
+                 reqSalesTxt.innerText = "INVIABLE";
+            } else {
+                 reqSalesTxt.innerText = `${Math.ceil(reqVol)} Unidades`;
+            }
+            salesBar.style.width = `${barWidth}%`;
+        }
+
+        // --- FIN LÓGICA DE WAR ROOM --- //
+        
+        let currentSourcePath = null;
+        let currentSchema = null;
+
+        async function selectDataSource() {
+            const btn = document.getElementById('btn-select-source');
+            btn.innerText = 'ABRIENDO...';
+            
+            try {
+                const path = await invoke('select_data_source');
+                if (path) {
+                    currentSourcePath = path;
+                    btn.innerText = path.split(/[/\\]/).pop(); // Show filename
+                    await analyzeDataSource(path);
+                } else {
+                    btn.innerText = 'SELECCIONAR ORIGEN';
+                }
+            } catch (error) {
+                console.error("Error al seleccionar:", error);
+                btn.innerText = 'ERROR (REINTENTAR)';
+            }
+        }
+
+        async function analyzeDataSource(path) {
+            const step2 = document.getElementById('ingest-step-2');
+            const status = document.getElementById('mapping-status');
+            const container = document.getElementById('schema-mapping-container');
+            const btnExecute = document.getElementById('btn-execute-ingestion');
+            const anomaliesContainer = document.getElementById('anomalies-container');
+            const anomaliesList = document.getElementById('anomalies-list');
+            
+            step2.classList.remove('hidden');
+            step2.classList.add('flex');
+            status.innerText = "Analizando entropía estructural... " + path;
+            container.innerHTML = "<div class='col-span-2 text-center text-amber-500 animate-pulse'>ESPERANDO ORÁCULO...</div>";
+            btnExecute.classList.add('hidden');
+            anomaliesContainer.classList.add('hidden');
+
+            try {
+                const report = await invoke('analyze_data_source', { path: path });
+                currentSchema = report.schema_inferred;
+                
+                status.innerText = `Oráculo completado. ${report.total_rows_analyzed} filas analizadas.`;
+                
+                // Renderizar mapeo
+                const renderCol = (label, colOpt) => {
+                    const mappedName = colOpt ? colOpt[0] : "NO_DETECTADO";
+                    const confidenceColor = colOpt ? (colOpt[1] === "High" ? "text-[#ADFA1D]" : "text-amber-500") : "text-red-500";
+                    return `
+                        <div class="border border-white/10 p-3 bg-black/50 flex justify-between items-center">
+                            <span>${label}</span>
+                            <span class="${confidenceColor} font-bold">${mappedName}</span>
+                        </div>
+                    `;
+                };
+
+                container.innerHTML = `
+                    <div class="flex flex-col gap-2">
+                        <div class="text-amber-500 mb-1">> CAMPOS REQUERIDOS</div>
+                        ${renderCol("ID_PRODUCTO (SKU)", currentSchema.product_id_col)}
+                        ${renderCol("CANTIDAD (QTY)", currentSchema.qty_col)}
+                        ${renderCol("PRECIO (USD)", currentSchema.price_col)}
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div class="text-amber-500 mb-1">> CAMPOS OPCIONALES</div>
+                        ${renderCol("COSTO_REPOSICIÓN", currentSchema.cost_col)}
+                        ${renderCol("FECHA_TRANSACCIÓN", currentSchema.date_col)}
+                    </div>
+                `;
+
+                if (report.anomalies_detected.length > 0) {
+                    anomaliesContainer.classList.remove('hidden');
+                    anomaliesList.innerHTML = report.anomalies_detected.slice(0, 5).map(a => 
+                        `<li>Fila ${a.row_index}: Columna '${a.column_name}' - ${a.issue_description} (Valor crudo: '${a.raw_value}')</li>`
+                    ).join('');
+                    if (report.anomalies_detected.length > 5) {
+                        anomaliesList.innerHTML += `<li>...y ${report.anomalies_detected.length - 5} más. Las filas corruptas irán a Cuarentena (DLQ).</li>`;
+                    }
+                }
+
+                if (currentSchema.product_id_col && currentSchema.qty_col && currentSchema.price_col) {
+                    btnExecute.classList.remove('hidden');
+                } else {
+                    container.innerHTML += `<div class="col-span-2 text-center text-red-500 mt-4 border border-red-500 p-2">FALTAN CAMPOS REQUERIDOS PARA TRANSMUTACIÓN</div>`;
+                }
+
+            } catch (error) {
+                console.error("Error oráculo:", error);
+                status.innerText = "ERROR FATAL EN ORÁCULO";
+                container.innerHTML = `<div class='col-span-2 text-red-500 break-words'>${error}</div>`;
+            }
+        }
+
+        async function executeIngestion() {
+            if (!currentSourcePath || !currentSchema) return;
+            
+            const btn = document.getElementById('btn-execute-ingestion');
+            const status = document.getElementById('mapping-status');
+            const activateSentinel = document.getElementById('chk-activate-sentinel').checked;
+            
+            btn.innerText = 'MUTANDO...';
+            btn.classList.add('animate-pulse');
+            btn.disabled = true;
+
+            try {
+                const result = await invoke('execute_ingestion', { 
+                    path: currentSourcePath, 
+                    schema: currentSchema,
+                    activateSentinel: activateSentinel
+                });
+                
+                status.innerHTML = `<span class="text-[#ADFA1D]">> ${result}</span>`;
+                btn.innerText = 'VOLVER AL RESUMEN';
+                btn.classList.remove('animate-pulse');
+                btn.onclick = () => switchTab(null, 'view-resumen');
+                
+                // Recargar inventario en background
+                initInventory();
+
+            } catch (error) {
+                console.error("Error en transmutación:", error);
+                status.innerHTML = `<span class="text-red-500">> ERROR: ${error}</span>`;
+                btn.innerText = 'ERROR FATAL';
+                btn.classList.remove('animate-pulse');
+            }
+        }
+
+        function cancelIngestion() {
+            document.getElementById('ingest-step-2').classList.add('hidden');
+            document.getElementById('ingest-step-2').classList.remove('flex');
+            document.getElementById('btn-select-source').innerText = 'SELECCIONAR ORIGEN';
+            currentSourcePath = null;
+            currentSchema = null;
+        }
+
+        // Ejecutar al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            // Failsafe: Si en 800ms no se ha mostrado la ventana, forzar visibilidad
+            const failsafe = setTimeout(() => {
+                console.warn("> FAILSAFE_TRIGGERED: Mostrando ventana por timeout");
+                if (invoke) invoke('show_main_window');
+            }, 800);
+
+            Promise.all([
+                initInventory(),
+                invoke('get_tasa_bcv').then(tasa => {
+                    const val = parseFloat(tasa);
+                    if (val > 0) {
+                        document.getElementById('tasa-bcv-value').innerText = val.toFixed(2);
+                    }
+                }).catch(e => console.error("Error cargando tasa inicial", e))
+            ]).finally(() => {
+                clearTimeout(failsafe);
+                if (invoke) invoke('show_main_window');
+                console.log("> SYS_READY: Ventana liberada");
+            });
+        });
+    </script>
+    </script>
+</body>
+</html>

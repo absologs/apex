@@ -1,0 +1,37 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+
+# Databases (Local State & Snapshots)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+apex_db_kv/
+apex_db/
+
+# OS / IDE / Editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment & Secrets
+.env
+.env.*
+!.env.template
+
+# Node / Frontend
+node_modules/
+dist/
+.pnpm-debug.log*
+
+# Tauri específicos
+apex-ui/gen/
+ui/dist/
+
+# Logs de error y ejecución
+*.log
+ui_error.log
+error.log
