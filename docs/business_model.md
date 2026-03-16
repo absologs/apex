@@ -2,7 +2,7 @@
 
 ## 1. Tesis del Problema y Oportunidad de Mercado (Visión B2B Enterprise)
 
-**El Entorno:** Economías de alta entropía y depreciación asimétrica (ej. El Tigre, Venezuela).
+**El Entorno:** Economías de alta entropía y depreciación asimétrica.
 **La Ineficiencia Sistémica:** Para mitigar el riesgo inflacionario, el 99% de los negocios aplica una heurística defensiva arcaica: el "Forward Sintético" (calcular precios basados en una tasa de cambio futura arbitraria global, ej. usar 450 Bs cuando el Spot es 430 Bs).
 * **Consecuencia:** Esta aplicación escalar estática genera subsidios cruzados masivos. Destruye la competitividad en bienes inelásticos (donde la demanda es hipersensible al precio) y descapitaliza al comerciante en bienes de baja rotación (donde la prima de riesgo se agota antes de la venta).
 **La Solución:** Apex. Un motor de optimización matemática que sustituye la heurística estática por precios dinámicos vectorizados, permitiendo al cliente aniquilar a la competencia en productos ancla y maximizar márgenes en productos ciegos, sin riesgo de ruina.
@@ -13,8 +13,8 @@
 
 **APEX** es un Sistema Cuantitativo de Soporte a Decisiones. Se acopla en modalidad "Read-Only" sobre bases de datos legacy ineficientes. Ingiere datos transaccionales, limpia la varianza, y procesa la información a través de tensores topológicos para devolver **Vectores Accionables**.
 
-* **Cero Carga Cognitiva:** El cliente interactúa con directivas en lenguaje natural generadas por el modelo matemático (ej. "Ajustar precio de SKU X a Y para mantener cobertura de liquidez").
-* **Rigor en la Ingesta:** Apex obliga a una "Auditoría Cero" (conteo físico manual). No asume la basura histórica del sistema legacy como verdad; exige un estado inicial limpio para inicializar los tensores.
+* **Cero Carga Cognitiva:** El cliente interactúa con directivas en lenguaje natural generadas por el modelo matemático (ej. "Ajustar precio de "Prodcuto" X a Y para mantener cobertura de liquidez").
+* **Rigor en la Ingesta:** Apex obliga a una "Auditoría Cero". No asume la basura histórica del sistema legacy como verdad; exige un estado inicial limpio para inicializar los tensores.
 
 ---
 

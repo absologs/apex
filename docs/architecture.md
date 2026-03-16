@@ -1,7 +1,7 @@
 # APEX v1.0: Arquitectura, Matemática Tensorial y Trade-Offs
 **Fecha:** 8 de Marzo, 2026
-**Ubicación Objetivo:** El Tigre, Venezuela (Entorno de Alta Entropía Bimonetaria)
-**Roles Documentados:** Product Manager, SWE Senior (Rust), Quant Finance Consultant
+**Ubicación Objetivo:** Venezuela (Entorno de Alta Entropía Bimonetaria)
+**Roles Documentados:** Product Manager, SWE Senior (Rust), Quant Finance Consultant, Data Engineer
 
 ---
 
