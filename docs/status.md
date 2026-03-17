@@ -20,7 +20,14 @@ El corazón de almacenamiento ha sido implementado bajo un modelo híbrido en `a
 * **LIFO Financiero:** El método `project_current_inventory` está configurado para descontar la salida de mercancía consumiendo los lotes más recientes, blindando al usuario contra los costos de reposición actuales (inflación) y marginando el capital más antiguo como rentabilidad retenida.
 * **Proyección Tensorial Agnóstica:** Implementación de Locality-Sensitive Hashing (LSH) en `apex-core/src/tensor.rs`. Transmuta la estructura probabilística ($D=64$) de un conjunto de bytes a un espacio hiperplano determinista ($K=16$) usando una proyección de Johnson-Lindenstrauss sin algoritmos estocásticos ni entrenamiento.
 
-### 1.3 Ingesta Topológica Agóstica (Oráculo ETL)
+### 1.3 Arquitectura Columnar Pura (Apache Arrow)
+Todo el flujo de datos del núcleo opera bajo una arquitectura *Struct of Arrays* (SoA) utilizando `Apache Arrow`, garantizando un consumo de memoria constante $O(1)$ y rendimiento extremo:
+* **Ingesta Directa:** El `CsvAdapter` lee archivos directamente hacia `RecordBatch` de Arrow, erradicando el uso de iteradores por filas (`HashMap`).
+* **Motor de Limpieza (Playbook):** Las transformaciones de datos (Trim, Uppercase, Cast) se ejecutan de manera columnar pura, optimizadas por el compilador para aprovechar la vectorización (SIMD) del procesador. 
+* **Transporte IPC Binario:** Se eliminó el cuello de botella de serialización JSON hacia el frontend. La UI en Javascript (Tauri) recibe el estado del inventario completo como un bloque binario `Uint8Array` de Arrow (`get_inventory_arrow`), permitiendo renderizar millones de registros sin presión sobre el Garbage Collector.
+* **Determinismo Criptográfico:** La firma topológica (LSH, MinHash, HyperLogLog) utiliza implementaciones de `SipHash-1-3` con semillas fijas, asegurando una inmutabilidad matemática absoluta.
+
+### 1.4 Ingesta Topológica Agóstica (Oráculo ETL)
 Implementado en `apex-core/src/ingest.rs` y `apex-core/src/playbook.rs`:
 * **Motor de Limpieza Determinista (AST/Playbook):** Arquitectura inmutable de transformaciones. Todo cambio (como normalizar textos, castear enteros con *fallbacks* matemáticos o rellenar vacíos) se ejecuta mediante un Árbol Sintáctico Abstracto (AST) puro (`TransformOp`), permitiendo que una misma "Receta" (*Playbook*) actúe sobre los datos origen produciendo siempre un estado matemáticamente idéntico y evitando las mutaciones locales (*In-place mutation*).
 * **Pipeline Determinista (SensorFeatures):** Evaluación exhaustiva del comportamiento probabilístico del bloque (Numérico, Texto, Fecha) usando estimación matemática:

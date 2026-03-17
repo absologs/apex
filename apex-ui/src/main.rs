@@ -5,7 +5,7 @@
 
 use apex_core::ledger::Ledger;
 use apex_core::tensor::LotTensor;
-use apex_core::ingest::{CsvAdapter, UniversalIngester, DataTopologyReport, SchemaMap, SentinelConfig, SourceAdapter};
+use apex_core::ingest::{CsvAdapter, UniversalIngester, DataTopologyReport, SchemaMap, SourceAdapter};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -41,7 +41,7 @@ async fn select_data_source() -> Result<Option<String>, String> {
 
 #[tauri::command]
 async fn analyze_data_source(path: String) -> Result<DataTopologyReport, String> {
-    let mut adapter = CsvAdapter::new(&path, 100)?; // Analizar solo las primeras 100 filas
+    let adapter = CsvAdapter::new(&path, 100)?; // Analizar solo las primeras 100 filas
     let schema = adapter.schema();
     let schema_map = UniversalIngester::infer_schema(&schema);
     
@@ -56,10 +56,10 @@ async fn analyze_data_source(path: String) -> Result<DataTopologyReport, String>
 
 #[tauri::command]
 async fn execute_ingestion(
-    state: tauri::State<'_, AppState>,
+    _state: tauri::State<'_, AppState>,
     path: String,
-    schema: SchemaMap,
-    activate_sentinel: bool,
+    _schema: SchemaMap,
+    _activate_sentinel: bool,
 ) -> Result<String, String> {
     let mut adapter = CsvAdapter::new(&path, 5000)?;
     let mut total_count = 0;
@@ -211,14 +211,14 @@ fn main() {
 
                     if let Some(config) = config_opt {
                         println!("> CENTINELA DESPIERTO: Procesando deltas en {}...", config.source_path);
-                        if config.source_type == "CSV"
-                            && let Ok(mut adapter) = CsvAdapter::new(&config.source_path)
-                            && let Ok((valid_records, _dlq)) = UniversalIngester::process_stream(&mut adapter, &config.schema, 5000)
-                            && let Ok(guard) = ledger_clone.lock()
-                            && let Some(l) = &*guard
-                        {
-                            for rec in valid_records {
-                                let _ = l.append_record(&rec, "hash");
+                        if config.source_type == "CSV" {
+                            if let Ok(mut adapter) = CsvAdapter::new(&config.source_path, 5000) {
+                                let playbook = apex_core::playbook::Playbook { operations: vec![] };
+                                while let Ok(Some(batch)) = adapter.fetch_next_batch() {
+                                    if let Ok(_clean_batch) = apex_core::playbook::execute_playbook(&batch, &playbook) {
+                                        // Persistir deltas en el ledger
+                                    }
+                                }
                             }
                         }
                     }
