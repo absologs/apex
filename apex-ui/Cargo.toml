@@ -14,6 +14,7 @@ reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 tauri-plugin-dialog = "2.6.0"
 rfd = "0.17.2"
+arrow = "58.0.0"
 
 [build-dependencies]
 tauri-build = "2"

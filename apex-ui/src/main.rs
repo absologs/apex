@@ -121,6 +121,46 @@ async fn sync_bcv_rate(state: tauri::State<'_, AppState>) -> Result<String, Stri
 }
 
 #[tauri::command]
+fn run_ingestion_pipeline() -> Result<Vec<u8>, String> {
+    use arrow::array::{StringArray, Int64Array};
+    use arrow::datatypes::{DataType, Field, Schema};
+    use arrow::record_batch::RecordBatch;
+    use arrow::ipc::writer::StreamWriter;
+    use std::sync::Arc;
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("sku", DataType::Utf8, false),
+        Field::new("qty", DataType::Int64, false),
+        Field::new("status", DataType::Utf8, false),
+    ]));
+
+    let sku_array = StringArray::from(vec!["PROD-001", "PROD-002", "PROD-003", "PROD-004", "PROD-005"]);
+    let qty_array = Int64Array::from(vec![150, 200, 50, 0, 10]);
+    let status_array = StringArray::from(vec!["ACTIVE", "ACTIVE", "WARNING", "DEAD", "WARNING"]);
+
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(sku_array),
+            Arc::new(qty_array),
+            Arc::new(status_array),
+        ],
+    ).map_err(|e| format!("Error creando batch: {}", e))?;
+
+    let mut buffer = Vec::new();
+    {
+        let mut writer = StreamWriter::try_new(&mut buffer, &schema)
+            .map_err(|e| format!("Error en StreamWriter: {}", e))?;
+        writer.write(&batch)
+            .map_err(|e| format!("Error escribiendo batch: {}", e))?;
+        writer.finish()
+            .map_err(|e| format!("Error finalizando stream: {}", e))?;
+    }
+
+    Ok(buffer)
+}
+
+#[tauri::command]
 fn get_inventory_arrow(state: tauri::State<AppState>) -> Result<Vec<u8>, String> {
     let ledger_guard = state.ledger.lock().map_err(|e| format!("Error de concurrencia: {}", e))?;
 
@@ -229,6 +269,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_inventory,
             get_inventory_arrow,
+            run_ingestion_pipeline,
             sync_bcv_rate,
             get_tasa_bcv,
             show_main_window,

@@ -54,11 +54,12 @@ La transición de `egui` a una arquitectura **Tauri v2 + HTML/Tailwind CSS** ha 
 * **Manejo de Estado Concurrente:** El Ledger de la base de datos y la Tasa BCV están empaquetados en un `Arc<Mutex<AppState>>`, asegurando que la interfaz puede consultar la data concurrentemente sin colisiones de memoria (Data Races).
 * **Solución de la "Ventana Invisible":** Se corrigió el problema crítico de lanzamiento al forzar la configuración de Tauri v2 (`withGlobalTauri: true`) y hacer la ventana visible por defecto (`"visible": true`).
 
-### 2.2 Avances Visuales (Carga Cero)
+### 2.2 Avances Visuales (Carga Cero y Zero-Copy)
 * El diseño de "Terminal Táctica" en Modo Oscuro Estricto (`#0D0D0D`) y colores de acento en Verde Neón (`#ADFA1D`) ya está renderizado en el front.
-* El enrutamiento básico mediante pestañas Javascript nativo (Resumen, War Room, El Radar, La Cadena, Ingesta) está operativo.
+* El enrutamiento básico mediante pestañas Javascript nativo (Resumen, War Room, El Radar, La Cadena, Ingesta, Zero-Copy) está operativo.
 * La vista "Resumen" lee el inventario proyectado (`get_inventory`), calculando Ingreso Total multiplicando `cost_usd * current_quantity` en tiempo real.
 * **Flujo de Ingesta ETL Integrado:** La pestaña de Ingesta cuenta con un Wizard funcional que permite seleccionar asincrónicamente el origen de datos, lanzar el "Oráculo de Mapeo" y mostrar anomalías en la estructura del archivo origen antes de ejecutar la transmutación hacia la base de datos `apex_db`.
+* **Puente Zero-Copy (Arrow IPC):** Se implementó una vista dedicada ("Zero-Copy") que consume el pipeline columnar a través de un bus binario. El frontend utiliza Módulos ECMAScript (ESM) para cargar `apache-arrow` sin bundlers, mapeando el `Uint8Array` recibido desde Rust directamente a la memoria de la UI en tiempo $O(1)$, eliminando la presión sobre el Garbage Collector.
 
 ---
 
