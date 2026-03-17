@@ -4,4 +4,6 @@ pub mod ledger;
 pub mod models;
 pub mod oracle;
 pub mod playbook;
+pub mod stream;
+pub mod arrow_transport;
 pub mod tensor;

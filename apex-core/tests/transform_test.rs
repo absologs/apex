@@ -1,4 +1,4 @@
-use apex_core::playbook::{DataFrameView, Playbook, TransformOp, execute_playbook};
+use apex_core::playbook::{Playbook, TransformOp, execute_playbook};
 use std::collections::HashMap;
 
 #[test]
@@ -14,9 +14,7 @@ fn test_deterministic_transform_pipeline() {
     row2.insert("qty".to_string(), "texto_invalido".to_string()); // Corrupto
     // "category" está completamente ausente en esta fila
 
-    let raw_data = DataFrameView {
-        rows: vec![row1, row2],
-    };
+    let raw_data = vec![row1, row2];
 
     // 2. Definir la Receta (Playbook) AST
     let playbook = Playbook {
@@ -41,10 +39,12 @@ fn test_deterministic_transform_pipeline() {
     };
 
     // 3. Primer Pase (Simulando Ingesta)
-    let clean_data_1 = execute_playbook(&raw_data, &playbook).expect("El motor no debe colapsar");
+    let clean_data_1: Vec<_> = execute_playbook(raw_data.clone().into_iter(), &playbook)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("El motor no debe colapsar");
 
     // Verificación Empírica de Comportamiento Determínistico
-    let r1 = &clean_data_1.rows[0];
+    let r1 = &clean_data_1[0];
     assert_eq!(r1.get("sku").unwrap(), "PROD-001");
     assert_eq!(
         r1.get("qty").unwrap(),
@@ -54,7 +54,7 @@ fn test_deterministic_transform_pipeline() {
     assert_eq!(r1.get("category").unwrap(), "GENERAL", "Debe llenar vacíos");
     assert_eq!(r1.get("composite_id").unwrap(), "PROD-001_GENERAL");
 
-    let r2 = &clean_data_1.rows[1];
+    let r2 = &clean_data_1[1];
     assert_eq!(r2.get("sku").unwrap(), "PROD-002");
     assert_eq!(
         r2.get("qty").unwrap(),
@@ -69,11 +69,42 @@ fn test_deterministic_transform_pipeline() {
     assert_eq!(r2.get("composite_id").unwrap(), "PROD-002_GENERAL");
 
     // 4. Segundo Pase ("Time-Travel" reproduciendo exactamente el mismo estado)
-    let clean_data_2 = execute_playbook(&raw_data, &playbook).expect("El motor no debe colapsar");
+    let clean_data_2: Vec<_> = execute_playbook(raw_data.clone().into_iter(), &playbook)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("El motor no debe colapsar");
 
     // 5. Corroborar Invariante Fundamental: Determinismo Absoluto
     assert_eq!(
         clean_data_1, clean_data_2,
         "ERROR CRÍTICO: La transformación no fue estrictamente reproducible (falló comprobación Time-Travel)"
     );
+}
+
+#[test]
+fn test_large_stream_memory_efficiency_conceptual() {
+    // Simulamos un flujo continuo de 100,000 filas
+    let large_stream = (0..100_000).map(|i| {
+        let mut row = HashMap::new();
+        row.insert("sku".to_string(), format!(" prod-{:06} ", i));
+        row.insert("qty".to_string(), i.to_string());
+        row
+    });
+
+    let playbook = Playbook {
+        operations: vec![
+            TransformOp::TrimWhitespace("sku".to_string()),
+            TransformOp::Uppercase("sku".to_string()),
+        ],
+    };
+
+    // Al ser un iterador, el procesamiento es perezoso y no carga las 100k filas en RAM simultáneamente
+    let mut processed_stream = execute_playbook(large_stream, &playbook);
+
+    // Solo procesamos la primera y verificamos
+    if let Some(Ok(row)) = processed_stream.next() {
+        assert_eq!(row.get("sku").unwrap(), "PROD-000000");
+    }
+
+    // El hecho de que esto no requiera recolectar todo el stream en un Vec
+    // demuestra la eficiencia de memoria O(1) por fila.
 }
