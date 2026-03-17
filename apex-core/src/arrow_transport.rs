@@ -4,7 +4,6 @@ use arrow::record_batch::RecordBatch;
 use arrow::ipc::writer::StreamWriter;
 use std::sync::Arc;
 use std::collections::HashMap;
-use rust_decimal::prelude::ToPrimitive;
 use crate::tensor::LotTensor;
 use crate::playbook::TransformError;
 
@@ -49,7 +48,15 @@ pub fn inventory_to_arrow_ipc(
             product_id_builder.append_value(product_id);
             
             let to_i128 = |d: rust_decimal::Decimal| -> i128 {
-                d.to_i128().unwrap_or(0)
+                let mantissa = d.mantissa(); // i128 puro
+                let scale = d.scale() as i32;
+                let target_scale = 28;
+                
+                if target_scale >= scale {
+                    mantissa * 10i128.pow((target_scale - scale) as u32)
+                } else {
+                    mantissa / 10i128.pow((scale - target_scale) as u32)
+                }
             };
 
             q_actual_builder.append_value(to_i128(lot.q_actual));

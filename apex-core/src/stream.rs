@@ -1,5 +1,7 @@
 use arrow::record_batch::RecordBatch;
 use arrow::array::as_string_array;
+use arrow_cast::cast;
+use arrow::datatypes::DataType;
 use crate::ingest::{IngestError, SchemaMap, ingest_column};
 use crate::playbook::{Playbook, execute_playbook, TransformError};
 
@@ -28,7 +30,11 @@ pub fn process_live_stream(
     if let Some((col, _)) = &schema.product_id_col {
         let schema_batch = deltas.schema();
         if let Ok(idx) = schema_batch.index_of(col) {
-            let array = as_string_array(deltas.column(idx));
+            let raw_col = deltas.column(idx);
+            let casted_col = cast(raw_col, &DataType::Utf8)
+                .map_err(|e| StreamError::AdapterError(format!("Error casteando ID a String: {}", e)))?;
+            let array = as_string_array(&casted_col);
+            
             for opt_val in array.iter() {
                 if let Some(val) = opt_val {
                     // Si ingest_column falla o cambia drásticamente, detectamos el drift.
