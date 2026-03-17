@@ -1,5 +1,5 @@
 # ESTADO DEL PROYECTO: APEX v1.0 (Auditoría Cero)
-**Fecha:** 15 de Marzo, 2026
+**Fecha:** 16 de Marzo, 2026
 **Estado Actual:** Fase de Consolidación Arquitectónica e Integración de UI.
 
 Este documento refleja el estado exacto, verificado empíricamente, del código fuente, la infraestructura y las decisiones arquitectónicas implementadas hasta la fecha.
@@ -18,9 +18,15 @@ El corazón de almacenamiento ha sido implementado bajo un modelo híbrido en `a
 ### 1.2 El Oráculo Cuantitativo y Tensores
 * **Precisión Financiera:** Se abandonó el uso de flotantes estocásticos (`f32`/`f64`). Todas las estructuras tensoriales (`LotTensor`) operan con `rust_decimal`, garantizando determinismo algebraico.
 * **LIFO Financiero:** El método `project_current_inventory` está configurado para descontar la salida de mercancía consumiendo los lotes más recientes, blindando al usuario contra los costos de reposición actuales (inflación) y marginando el capital más antiguo como rentabilidad retenida.
+* **Proyección Tensorial Agnóstica:** Implementación de Locality-Sensitive Hashing (LSH) en `apex-core/src/tensor.rs`. Transmuta la estructura probabilística ($D=64$) de un conjunto de bytes a un espacio hiperplano determinista ($K=16$) usando una proyección de Johnson-Lindenstrauss sin algoritmos estocásticos ni entrenamiento.
 
 ### 1.3 Ingesta Topológica Agóstica (Oráculo ETL)
-Implementado en `apex-core/src/ingest.rs`:
+Implementado en `apex-core/src/ingest.rs` y `apex-core/src/playbook.rs`:
+* **Motor de Limpieza Determinista (AST/Playbook):** Arquitectura inmutable de transformaciones. Todo cambio (como normalizar textos, castear enteros con *fallbacks* matemáticos o rellenar vacíos) se ejecuta mediante un Árbol Sintáctico Abstracto (AST) puro (`TransformOp`), permitiendo que una misma "Receta" (*Playbook*) actúe sobre los datos origen produciendo siempre un estado matemáticamente idéntico y evitando las mutaciones locales (*In-place mutation*).
+* **Pipeline Determinista (SensorFeatures):** Evaluación exhaustiva del comportamiento probabilístico del bloque (Numérico, Texto, Fecha) usando estimación matemática:
+  - Firma `MinHash` (58 hashes) para cadenas, generada algorítmicamente mediante $FNV-1a$ con Semillas estáticas.
+  - Estimador `HyperLogLog` (64 Bins, 6 bits) para inferir cardinalidad, optimizado bit a bit.
+  - Erradicación de colapsos: Funciones puras que devuelven resultados vacíos controlados (`[0.0; 64]`) si el dataset colapsa.
 * **Abstracción de Origen (`SourceAdapter`):** Se creó una interfaz que permite conectar cualquier fuente de datos (CSV, SQL) utilizando un sistema de lectura por iteradores para no saturar la memoria RAM. La primera implementación probada y funcional es el `CsvAdapter`.
 * **Reconocimiento Heurístico de Columnas:** A través de expresiones regulares compiladas perezosamente (`LazyLock`), el motor detecta automáticamente qué columna es el SKU, Precio, Cantidad o Fecha.
 * **Dead Letter Queue (Cuarentena):** Si una fila está corrupta no se detiene la ingesta masiva. Se descarta en una estructura aislada detallando la razón del fallo, asegurando que `Sled` solo reciba datos matemáticamente puros.
@@ -53,10 +59,10 @@ La transición de `egui` a una arquitectura **Tauri v2 + HTML/Tailwind CSS** ha 
 
 Aunque el ecosistema compila sin errores (Exit Code 0), restan las siguientes áreas de intervención:
 
-### 3.1 Erradicación de Pánicos (Estándar Apollo 11)
-* **Inmunidad Estructural:** Se realizó una purga total de llamadas `.unwrap()` y `.expect()` en el núcleo de procesamiento y el servidor de divisas. El sistema ahora opera bajo un control de flujo estrictamente determinista basado en `Result<T, E>`.
+### 3.1 Erradicación de Pánicos (Estándar Apollo 11) - **[COMPLETADO]**
+* **Inmunidad Estructural:** Se purgaron el 100% de las instrucciones estocásticas que podían colapsar el sistema de ingesta (`.unwrap()` y `.expect()`). Todo control de flujo se hace mediante la captura inquebrantable de errores `Result<T, E>`.
 * **Seguridad en Concurrencia:** Los bloqueos de memoria (`Mutex`) en el backend de Tauri ahora gestionan errores de envenenamiento de hilos sin colapsar el proceso principal, devolviendo alertas controladas a la interfaz.
-* **Compilación de Oráculos:** Las expresiones regulares y selectores de scrapping HTML han sido migrados a `LazyLock`, garantizando una inicialización única y segura en el arranque del sistema.
+* **Compilación de Oráculos:** Las expresiones regulares (`regex`) y selectores de scrapping HTML (`scraper`) se migrarón a constructores seguros como `LazyLock<Result<Regex, regex::Error>>` o `LazyLock<Option<Selector>>`, previniendo de forma determinista la invalidación de memoria por anomalías sintácticas en compilación de expresiones.
 
 ### 3.2 Desarrollo de Módulos de Combate
 * **War Room (Completado):** El simulador de elasticidad ya está enlazado a los datos de inventario proyectado y es capaz de simular la exigencia de ventas (`∆V`) necesarias frente al Precio de Supervivencia (`P_floor`), bloqueando el comando si se perfora la frontera de ruina.

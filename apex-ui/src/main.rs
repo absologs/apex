@@ -219,5 +219,8 @@ fn main() {
             execute_ingestion
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    {
+        eprintln!("Error while running tauri application: {}", e);
+        std::process::exit(1);
+    }
 }

@@ -191,9 +191,12 @@ impl Ledger {
     }
 
     /// Guarda la configuración del Agente Centinela
-    pub fn save_sentinel_config(&self, config: &crate::ingest::SentinelConfig) -> Result<(), String> {
-        let config_bytes =
-            serde_json::to_vec(config).map_err(|e| format!("Error serializando SentinelConfig: {}", e))?;
+    pub fn save_sentinel_config(
+        &self,
+        config: &crate::ingest::SentinelConfig,
+    ) -> Result<(), String> {
+        let config_bytes = serde_json::to_vec(config)
+            .map_err(|e| format!("Error serializando SentinelConfig: {}", e))?;
         self.sled_db
             .insert(b"SENTINEL_CONFIG", config_bytes)
             .map_err(|e| format!("Error guardando SentinelConfig en Sled: {}", e))?;

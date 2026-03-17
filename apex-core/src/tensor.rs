@@ -44,3 +44,35 @@ impl LotTensor {
         }
     }
 }
+
+// --- NUEVO PIPELINE TENSORIAL AGNÓSTICO ---
+
+/// Tensor resultante de la proyección aleatoria D -> K
+#[derive(Debug, Clone)]
+pub struct ProjectionTensor {
+    pub values: [f32; 16],
+}
+
+/// Lema de Johnson-Lindenstrauss: Matriz de proyección determinista
+/// Dimensions: 64 -> 16
+pub fn project(features: &crate::ingest::SensorFeatures) -> ProjectionTensor {
+    let mut tensor = ProjectionTensor { values: [0.0; 16] };
+
+    // Generador determinista de pesos +1 / -1
+    // Rademacher distribution
+    let mut lcg = 0xDE7E_2026_u32; // Semilla determinista
+
+    for k in 0..16 {
+        let mut sum = 0.0;
+        for d in 0..64 {
+            // LCG simple: next = (A * prev + C) mod M
+            lcg = lcg.wrapping_mul(1664525).wrapping_add(1013904223);
+            let weight = if (lcg >> 31) == 0 { 1.0 } else { -1.0 };
+            sum += features.values[d] * weight;
+        }
+        // Normalize against sqrt(K) roughly, though for thresholding it doesn't matter
+        tensor.values[k] = sum;
+    }
+
+    tensor
+}

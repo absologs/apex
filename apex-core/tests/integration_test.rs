@@ -78,3 +78,38 @@ fn test_universal_ingester_audit() {
     assert_eq!(report.anomalies_detected.len(), 3);
     assert!(!report.is_ready_for_ingestion);
 }
+
+#[test]
+fn test_agnostic_ingestion_pipeline() {
+    let data1 = b"sku_123\nsku_124\nsku_125\nsku_126\n";
+    // Mismos datos, determinismo absoluto
+    let data1_copy = b"sku_123\nsku_124\nsku_125\nsku_126\n";
+    // Datos similares pero con una ligera variación
+    let data2 = b"sku_123\nsku_124\nsku_125\nsku_999\n";
+    // Datos completamente diferentes (números y distinta longitud)
+    let data3 = b"10.5\n20.1\n15.0\n42.3\n100.0\n99.9\n";
+
+    let hash1 = apex_core::ingest::ingest_column(data1).unwrap();
+    let hash1_copy = apex_core::ingest::ingest_column(data1_copy).unwrap();
+    let hash2 = apex_core::ingest::ingest_column(data2).unwrap();
+    let hash3 = apex_core::ingest::ingest_column(data3).unwrap();
+
+    // 1. Determinismo Absoluto (hashes bit a bit idénticos)
+    assert_eq!(
+        hash1, hash1_copy,
+        "Determinismo falló: los hashes deben ser idénticos para el mismo input"
+    );
+
+    // 2. Tensores/Hashes cercanos para datos similares (Distancia de Hamming baja)
+    let hamming_distance_sim = (hash1 ^ hash2).count_ones();
+    let hamming_distance_diff = (hash1 ^ hash3).count_ones();
+
+    println!("Hamming(data1, data2) = {}", hamming_distance_sim);
+    println!("Hamming(data1, data3) = {}", hamming_distance_diff);
+
+    // Debido a LSH, datos similares deberían tener menor o igual distancia que datos diferentes.
+    assert!(
+        hamming_distance_sim <= hamming_distance_diff,
+        "La distancia topológica debe reflejar similitud semántica"
+    );
+}

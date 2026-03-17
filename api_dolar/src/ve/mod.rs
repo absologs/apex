@@ -38,9 +38,9 @@ async fn get_paralelo() -> Json<Option<Cotizacion>> {
 
 use std::sync::LazyLock;
 
-static DIV_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("div.recuadrotsmc").expect("Invalid DIV Selector"));
-static SPAN_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("span").expect("Invalid SPAN Selector"));
-static STRONG_SELECTOR: LazyLock<Selector> = LazyLock::new(|| Selector::parse("strong").expect("Invalid STRONG Selector"));
+static DIV_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("div.recuadrotsmc").ok());
+static SPAN_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("span").ok());
+static STRONG_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("strong").ok());
 
 async fn fetch_bcv_oficial() -> Option<Cotizacion> {
     let client = reqwest::Client::builder()
@@ -55,13 +55,17 @@ async fn fetch_bcv_oficial() -> Option<Cotizacion> {
 
     let mut valor_usd: Option<Decimal> = None;
 
-    for element in document.select(&DIV_SELECTOR) {
-        let is_usd = element.select(&SPAN_SELECTOR).any(|s| {
+    let div_sel = DIV_SELECTOR.as_ref()?;
+    let span_sel = SPAN_SELECTOR.as_ref()?;
+    let strong_sel = STRONG_SELECTOR.as_ref()?;
+
+    for element in document.select(div_sel) {
+        let is_usd = element.select(span_sel).any(|s| {
             let text = s.text().collect::<Vec<_>>().join("").trim().to_string();
             text == "USD"
         });
 
-        if is_usd && let Some(strong) = element.select(&STRONG_SELECTOR).next() {
+        if is_usd && let Some(strong) = element.select(strong_sel).next() {
             let text = strong
                 .text()
                 .collect::<Vec<_>>()
