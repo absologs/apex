@@ -157,63 +157,187 @@
                  </div>
 
                  <!-- Right Panel: Simulator -->
-                 <div class="w-2/3 p-10 flex flex-col justify-center items-center relative">
-                     <div class="absolute top-6 left-6 text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> SIMULADOR DE ELASTICIDAD</div>
+                 <div class="w-2/3 flex flex-col relative bg-[#0A0A0C]">
+                     <!-- Tabs War Room -->
+                     <div class="flex border-b border-white/10 shrink-0 bg-[#0D0D0D] w-full">
+                         <div class="flex-1 text-center py-4 border-r border-white/10 font-mono text-[10px] tracking-[0.2em] uppercase text-[#ADFA1D] bg-[#ADFA1D]/5 cursor-pointer hover:bg-[#ADFA1D]/10 transition-colors" id="wr-tab-elasticidad" onclick="switchWrTab('elasticidad')">> ELASTICIDAD</div>
+                         <div class="flex-1 text-center py-4 border-r border-white/10 font-mono text-[10px] tracking-[0.2em] uppercase text-gray-500 cursor-pointer hover:text-gray-300 transition-colors" id="wr-tab-bundling" onclick="switchWrTab('bundling')">> BUNDLING GRAVEDAD</div>
+                     </div>
                      
-                     <!-- The Slider -->
-                     <div class="w-full max-w-md flex flex-col items-center">
-                         <div class="flex justify-between w-full mb-4 text-xs font-mono text-gray-400">
-                             <span>PRECIO SIMULADO</span>
-                             <span id="wr-sim-price" class="text-2xl text-white font-bold">$0.00</span>
-                         </div>
-                         
-                         <input type="range" id="wr-price-slider" class="w-full h-2 bg-white/10 rounded-none appearance-none cursor-pointer mb-8" min="0" max="100" value="50" step="0.01" oninput="updateSimulation()">
-                         
-                         <!-- The Traffic Light -->
-                         <div id="wr-traffic-light" class="w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300">
-                             <span id="wr-status-text" class="text-[#ADFA1D] text-sm">> ESTADO: RENTABLE (MARGEN SEGURO)</span>
-                         </div>
+                     <!-- View: Elasticidad -->
+                     <div id="wr-view-elasticidad" class="flex-1 p-10 flex flex-col justify-center items-center w-full">
+                         <div class="w-full max-w-md flex flex-col items-center">
+                             <div class="flex justify-between w-full mb-4 text-xs font-mono text-gray-400">
+                                 <span>PRECIO SIMULADO</span>
+                                 <span id="wr-sim-price" class="text-2xl text-white font-bold">$0.00</span>
+                             </div>
+                             
+                             <input type="range" id="wr-price-slider" class="w-full h-2 bg-white/10 rounded-none appearance-none cursor-pointer mb-8" min="0" max="100" value="50" step="0.01" oninput="updateSimulation()">
+                             
+                             <div id="wr-traffic-light" class="w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300">
+                                 <span id="wr-status-text" class="text-[#ADFA1D] text-sm">> ESTADO: RENTABLE (MARGEN SEGURO)</span>
+                             </div>
 
-                         <!-- The Projection Bar -->
-                         <div class="w-full mt-10">
-                             <div class="flex justify-between text-[10px] text-gray-500 font-mono mb-2">
-                                 <span>PROYECCIÓN DE VENTA REQUERIDA (∆V)</span>
-                                 <span id="wr-req-sales" class="text-white">0 Unidades</span>
+                             <div class="w-full mt-10">
+                                 <div class="flex justify-between text-[10px] text-gray-500 font-mono mb-2">
+                                     <span>PROYECCIÓN DE VENTA REQUERIDA (∆V)</span>
+                                     <span id="wr-req-sales" class="text-white">0 Unidades</span>
+                                 </div>
+                                 <div class="w-full h-4 bg-white/5 relative overflow-hidden">
+                                     <div id="wr-sales-bar" class="h-full bg-white/20 transition-all duration-300 w-[0%]"></div>
+                                 </div>
                              </div>
-                             <div class="w-full h-4 bg-white/5 relative overflow-hidden">
-                                 <div id="wr-sales-bar" class="h-full bg-white/20 transition-all duration-300 w-[0%]"></div>
+                             
+                             <button id="btn-apply-maneuver" class="mt-12 border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-8 py-3 font-mono text-xs uppercase transition-colors cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                                 FIJAR PRECIO Y GENERAR REPORTE
+                             </button>
+                         </div>
+                     </div>
+
+                     <!-- View: Bundling Drag & Drop -->
+                     <div id="wr-view-bundling" class="flex-1 p-8 flex flex-col items-center w-full hidden">
+                         <div class="w-full h-full flex flex-col md:flex-row gap-6">
+                             <!-- Productos Héroes (Alta Rotación) -->
+                             <div class="w-1/2 border border-white/10 bg-[#0D0D0D] flex flex-col">
+                                 <div class="p-3 border-b border-white/10 text-[10px] text-gray-500 uppercase tracking-widest font-mono">> HÉROES (v1 ALTO)</div>
+                                 <div class="flex-1 p-4 flex flex-col gap-3 overflow-y-auto" id="heroes-list">
+                                     <div draggable="true" ondragstart="dragHero(event)" id="hero-1" class="border border-white/5 bg-white/5 p-3 cursor-grab hover:border-[#ADFA1D]/50 transition-colors" data-cost="0.90" data-price="1.20" data-name="HARINA PAN 1KG">
+                                         <div class="text-xs text-white font-mono mb-1 pointer-events-none">HARINA PAN 1KG</div>
+                                         <div class="flex justify-between text-[10px] font-mono text-gray-500 pointer-events-none">
+                                             <span>C: $0.90</span>
+                                             <span>P: $1.20</span>
+                                         </div>
+                                     </div>
+                                     <div draggable="true" ondragstart="dragHero(event)" id="hero-2" class="border border-white/5 bg-white/5 p-3 cursor-grab hover:border-[#ADFA1D]/50 transition-colors" data-cost="1.00" data-price="1.40" data-name="ARROZ MARY 1KG">
+                                         <div class="text-xs text-white font-mono mb-1 pointer-events-none">ARROZ MARY 1KG</div>
+                                         <div class="flex justify-between text-[10px] font-mono text-gray-500 pointer-events-none">
+                                             <span>C: $1.00</span>
+                                             <span>P: $1.40</span>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- Dropzone -->
+                             <div class="w-1/2 border border-dashed border-white/20 bg-white/5 flex flex-col p-6 transition-colors relative" id="bundle-dropzone" ondrop="dropHero(event)" ondragover="allowDropHero(event)" ondragenter="this.classList.add('border-[#ADFA1D]')" ondragleave="this.classList.remove('border-[#ADFA1D]')">
+                                 <div class="text-[10px] text-[#ADFA1D] uppercase tracking-widest font-mono mb-6">> ZONA DE EMPAQUETADO ORTOGONAL</div>
+                                 
+                                 <div class="flex-1 flex flex-col items-center justify-center relative" id="bundle-content">
+                                     <span class="text-gray-500 font-mono text-xs text-center pointer-events-none" id="bundle-placeholder">ARRASTRE UN HÉROE AQUÍ<br>PARA COMPENSAR</span>
+                                 </div>
+
+                                 <!-- Target SKU representation in bundle -->
+                                 <div class="w-full border border-white/10 bg-[#0D0D0D] p-4 flex justify-between items-center mt-auto">
+                                     <div class="flex flex-col font-mono text-xs">
+                                         <span class="text-gray-500">TARGET (ANCLA)</span>
+                                         <span class="text-red-400" id="bundle-target-name">--</span>
+                                     </div>
+                                     <div class="flex flex-col font-mono text-[10px] text-right">
+                                         <span class="text-gray-500">P_FLOOR</span>
+                                         <span class="text-white" id="bundle-target-floor">$0.00</span>
+                                     </div>
+                                 </div>
+
+                                 <!-- Calculator result -->
+                                 <div class="mt-4 border-t border-white/10 pt-4 hidden" id="bundle-calculator">
+                                     <div class="flex justify-between font-mono text-xs mb-2">
+                                         <span class="text-gray-400">COSTO CONJUNTO</span>
+                                         <span class="text-white" id="bundle-cost">$0.00</span>
+                                     </div>
+                                     <div class="flex justify-between font-mono text-xs mb-4">
+                                         <span class="text-gray-400">PRECIO DE COMBO</span>
+                                         <span class="text-[#ADFA1D] font-bold" id="bundle-price">$0.00</span>
+                                     </div>
+                                     <button class="border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-4 py-2 font-mono text-xs uppercase transition-colors cursor-pointer w-full" onclick="alert('Generando combo e imprimiendo etiquetas...')">
+                                         CREAR COMBO
+                                     </button>
+                                 </div>
                              </div>
                          </div>
-                         
-                         <button id="btn-apply-maneuver" class="mt-12 border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-8 py-3 font-mono text-xs uppercase transition-colors cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed">
-                             FIJAR PRECIO Y GENERAR REPORTE
-                         </button>
                      </div>
                  </div>
              </div>
         </div>
 
-        <!-- VISTA: EL RADAR -->
-        <div id="view-radar" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D]">
-             <div class="flex-1 flex items-center justify-center">
-                 <div class="text-center font-mono flex flex-col items-center">
-                     <span class="text-gray-400 text-lg">> RADAR</span>
-                     <div class="text-gray-600 text-[10px] mt-4 uppercase tracking-widest animate-pulse">Buscando divergencias...</div>
+        <!-- VISTA: EL RADAR (CRM VECTORIZADO) -->
+        <div id="view-radar" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
+             <div class="p-6 border-b border-white/10 bg-[#0D0D0D] flex justify-between items-center shrink-0">
+                 <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> AFINIDAD VECTORIAL DE CLIENTES</div>
+                 <button class="border border-[#ADFA1D]/30 text-[#ADFA1D] bg-[#ADFA1D]/5 px-4 py-1 text-xs font-mono hover:bg-[#ADFA1D]/20 transition-colors" onclick="loadCrmClusters()">SINCRONIZAR DB CRM</button>
+             </div>
+             <div class="flex-1 p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto items-start content-start">
+                 <!-- Tarjeta Clúster 1 -->
+                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
+                     <div>
+                         <div class="flex justify-between items-start mb-4">
+                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">Cazadores de Ofertas</span>
+                             <span class="text-xs text-gray-500 font-mono">v2 (Alta Elasticidad)</span>
+                         </div>
+                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Clúster con alta sensibilidad al precio. Historial de compra concentrado en liquidaciones y bundles. Ticket promedio bajo, rotación alta.</p>
+                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">1,402 Entidades</span></div>
+                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-emerald-400">0.89 (Target SKU)</span></div>
+                     </div>
+                     <button class="mt-6 border border-white/10 hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-pointer" onclick="alert('Generando texto promocional y abriendo WhatsApp API...')">
+                         <span>> DISPARAR PROMOCIÓN</span>
+                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">WHATSAPP</span>
+                     </button>
+                 </div>
+                 <!-- Tarjeta Clúster 2 -->
+                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
+                     <div>
+                         <div class="flex justify-between items-start mb-4">
+                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">VIP Corporativo</span>
+                             <span class="text-xs text-gray-500 font-mono">v5 (Alta Gravedad)</span>
+                         </div>
+                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Compradores institucionales. Baja sensibilidad al precio. Historial de compras por volumen en ciclos quincenales.</p>
+                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">85 Entidades</span></div>
+                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-red-400">0.12 (Target SKU)</span></div>
+                     </div>
+                     <button class="mt-6 border border-white/10 hover:border-red-400/50 text-gray-500 hover:text-red-400 bg-white/5 hover:bg-red-400/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-not-allowed">
+                         <span>> AFINIDAD INSUFICIENTE</span>
+                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">BLOQUEADO</span>
+                     </button>
+                 </div>
+                 <!-- Tarjeta Clúster 3 -->
+                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
+                     <div>
+                         <div class="flex justify-between items-start mb-4">
+                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">Fin de Semana</span>
+                             <span class="text-xs text-gray-500 font-mono">v1 (Inercia Cíclica)</span>
+                         </div>
+                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Clientes con patrones de compra estrictamente atados a los días Viernes-Sábado. Consumo recreativo.</p>
+                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">430 Entidades</span></div>
+                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-yellow-400">0.55 (Target SKU)</span></div>
+                     </div>
+                     <button class="mt-6 border border-white/10 hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-pointer" onclick="alert('Programando campaña diferida para el Viernes...')">
+                         <span>> PROGRAMAR CAMPAÑA</span>
+                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">DIFERIDO</span>
+                     </button>
                  </div>
              </div>
         </div>
 
-        <!-- VISTA: LA CADENA -->
+        <!-- VISTA: LA CADENA (LOGÍSTICA Y PROVEEDORES) -->
         <div id="view-cadena" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
-             <div class="flex-1 flex items-center justify-center">
-                 <div class="text-center font-mono flex flex-col items-center">
-                     <span class="text-gray-400 text-lg">> CADENA DE BLOQUES</span>
-                     <div class="text-gray-600 text-[10px] mt-4 uppercase tracking-widest">Validando firmas SHA-256...</div>
-                 </div>
+             <div class="p-6 border-b border-white/10 bg-[#0D0D0D] flex justify-between items-center shrink-0">
+                 <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> CADENA DE SUMINISTRO Y REPOSICIÓN PREDICTIVA</div>
+             </div>
+             <div class="flex-1 p-8 overflow-y-auto">
+                 <table class="w-full text-left font-mono text-xs text-gray-400 border-collapse">
+                     <thead>
+                         <tr class="border-b border-white/10 text-gray-500">
+                             <th class="py-3 px-4 font-normal">SKU ACTIVO</th>
+                             <th class="py-3 px-4 font-normal">Q ACTUAL</th>
+                             <th class="py-3 px-4 font-normal">VELOCIDAD (v1)</th>
+                             <th class="py-3 px-4 font-normal">ESTADO DE QUIEBRE</th>
+                             <th class="py-3 px-4 font-normal text-right">ACCIÓN</th>
+                         </tr>
+                     </thead>
+                     <tbody id="cadena-tbody">
+                     </tbody>
+                 </table>
              </div>
         </div>
-
-        <!-- VISTA: INGESTA -->
         <div id="view-ingesta" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D] overflow-y-auto">
              <div class="flex-1 flex flex-col items-center p-10">
                  
@@ -282,6 +406,94 @@
     <script type="module">
         import { tableFromIPC } from 'https://cdn.jsdelivr.net/npm/apache-arrow@16.0.0/+esm';
         window.tableFromIPC = tableFromIPC;
+        // --- WAR ROOM & BUNDLING LOGIC --- //
+        function switchWrTab(tab) {
+            const elastiView = document.getElementById('wr-view-elasticidad');
+            const bundleView = document.getElementById('wr-view-bundling');
+            const elastiTab = document.getElementById('wr-tab-elasticidad');
+            const bundleTab = document.getElementById('wr-tab-bundling');
+            
+            if (tab === 'elasticidad') {
+                elastiView.classList.remove('hidden');
+                bundleView.classList.add('hidden');
+                elastiTab.classList.replace('text-gray-500', 'text-[#ADFA1D]');
+                bundleTab.classList.replace('text-[#ADFA1D]', 'text-gray-500');
+            } else {
+                elastiView.classList.add('hidden');
+                bundleView.classList.remove('hidden');
+                bundleTab.classList.replace('text-gray-500', 'text-[#ADFA1D]');
+                elastiTab.classList.replace('text-[#ADFA1D]', 'text-gray-500');
+                
+                // Set target SKU in bundle view
+                const skuSelect = document.getElementById('warroom-sku-select');
+                if (skuSelect && skuSelect.value) {
+                    document.getElementById('bundle-target-name').innerText = skuSelect.value;
+                    document.getElementById('bundle-target-floor').innerText = document.getElementById('wr-floor').innerText;
+                } else {
+                    document.getElementById('bundle-target-name').innerText = '-- SELECCIONE ACTIVO --';
+                }
+            }
+        }
+
+        function dragHero(ev) {
+            ev.dataTransfer.setData("text/plain", ev.target.id);
+        }
+
+        function allowDropHero(ev) {
+            ev.preventDefault();
+        }
+
+        function dropHero(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedEl = document.getElementById(data);
+            
+            if (draggedEl) {
+                const targetCostStr = document.getElementById('wr-cost').innerText.replace('$', '');
+                const targetCost = parseFloat(targetCostStr) || 0;
+                const heroCost = parseFloat(draggedEl.getAttribute('data-cost')) || 0;
+                const heroPrice = parseFloat(draggedEl.getAttribute('data-price')) || 0;
+                const heroName = draggedEl.getAttribute('data-name');
+                
+                // Hide placeholder
+                document.getElementById('bundle-placeholder').classList.add('hidden');
+                
+                // Update dropped content view visually
+                const contentArea = document.getElementById('bundle-content');
+                
+                // Ensure we don't duplicate heroes infinitely in the visual representation for the demo
+                let heroRep = document.getElementById('dropped-hero');
+                if (!heroRep) {
+                    heroRep = document.createElement('div');
+                    heroRep.id = 'dropped-hero';
+                    heroRep.className = 'w-3/4 border border-[#ADFA1D]/50 bg-[#ADFA1D]/10 p-4 flex justify-between items-center mb-16 animate-pulse';
+                    contentArea.appendChild(heroRep);
+                }
+                
+                heroRep.innerHTML = `
+                    <div class="flex flex-col font-mono text-xs">
+                         <span class="text-[#ADFA1D]">HÉROE</span>
+                         <span class="text-white">${heroName}</span>
+                    </div>
+                    <div class="flex flex-col font-mono text-[10px] text-right">
+                         <span class="text-gray-500">P_SUGERIDO</span>
+                         <span class="text-[#ADFA1D]">$${heroPrice.toFixed(2)}</span>
+                    </div>
+                `;
+
+                // Calculate orthogonal pricing
+                const jointCost = targetCost + heroCost;
+                document.getElementById('bundle-cost').innerText = `$${jointCost.toFixed(2)}`;
+                
+                // Base formula: Hero Price + Target Cost (0 margin on target, margin protected on hero)
+                const bundlePrice = targetCost + heroPrice; 
+                document.getElementById('bundle-price').innerText = `$${bundlePrice.toFixed(2)}`;
+                
+                document.getElementById('bundle-calculator').classList.remove('hidden');
+                document.getElementById('bundle-dropzone').classList.remove('border-dashed');
+                document.getElementById('bundle-dropzone').classList.add('border-solid', 'border-[#ADFA1D]/50');
+            }
+        }
     </script>
 
     <script>
@@ -293,6 +505,133 @@
         const activeClasses = ['text-white', 'relative', 'after:content-[\'\']', 'after:absolute', 'after:-bottom-[13px]', 'after:left-0', 'after:w-full', 'after:h-[2px]', 'after:bg-[#ADFA1D]'];
         const inactiveClasses = ['text-gray-500', 'hover:text-gray-300', 'transition-colors'];
 
+        
+        
+        async function loadCadena() {
+            const tbody = document.getElementById('cadena-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="5" class="py-3 px-4 text-[#ADFA1D] font-mono text-sm">Calculando entropía logística...</td></tr>';
+            try {
+                const inventoryMap = await invoke('get_inventory');
+                tbody.innerHTML = '';
+                
+                let rowsHTML = '';
+                
+                for (const sku in inventoryMap) {
+                    const lotes = inventoryMap[sku];
+                    
+                    let totalQActual = 0;
+                    let totalQInicial = 0;
+                    let maxDays = 1;
+                    
+                    lotes.forEach(lote => {
+                        // Assuming q_actual, q_inicial are returned as numbers or strings by serde Decimal
+                        const qA = parseFloat(lote.q_actual);
+                        const qI = parseFloat(lote.q_inicial);
+                        const days = parseFloat(lote.delta_tiempo_dias);
+                        
+                        totalQActual += qA;
+                        totalQInicial += qI;
+                        if (days > maxDays) maxDays = days;
+                    });
+                    
+                    let velocity = (totalQInicial - totalQActual) / maxDays;
+                    if (velocity < 0) velocity = 0; // fallback if data is weird
+                    
+                    let daysLeft = 999;
+                    if (velocity > 0) {
+                        daysLeft = totalQActual / velocity;
+                    }
+                    
+                    let statusColor = 'text-[#ADFA1D]';
+                    let statusBg = 'bg-[#ADFA1D]';
+                    let actionBtn = '<button class="border border-white/20 px-3 py-1 text-gray-600 cursor-not-allowed">N/A</button>';
+                    let pulse = '';
+                    
+                    if (daysLeft < 3) {
+                        statusColor = 'text-red-400';
+                        statusBg = 'bg-red-400';
+                        pulse = 'animate-pulse';
+                        actionBtn = `<button class="border border-white/20 px-3 py-1 hover:border-[#ADFA1D] hover:text-[#ADFA1D] transition-colors cursor-pointer" onclick="alert('Generando Orden de Compra Inteligente...')">GENERAR ORDEN</button>`;
+                    } else if (daysLeft < 7) {
+                        statusColor = 'text-yellow-400';
+                        statusBg = 'bg-yellow-400';
+                        actionBtn = `<button class="border border-white/20 px-3 py-1 hover:border-[#ADFA1D] hover:text-[#ADFA1D] transition-colors cursor-pointer" onclick="alert('Añadiendo a cola de reposición...')">EVALUAR PROVEEDOR</button>`;
+                    }
+
+                    rowsHTML += `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                        <td class="py-3 px-4 text-white">${sku}</td>
+                        <td class="py-3 px-4">${totalQActual.toFixed(2)}</td>
+                        <td class="py-3 px-4">${velocity.toFixed(2)}/día</td>
+                        <td class="py-3 px-4 ${statusColor} flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full ${statusBg} ${pulse}"></div>
+                            ${daysLeft > 900 ? '∞' : daysLeft.toFixed(1)} Días
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            ${actionBtn}
+                        </td>
+                    </tr>
+                    `;
+                }
+                
+                if (rowsHTML === '') {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-3 px-4 text-gray-500 font-mono">Inventario estático. No hay flujo tensorial detectado.</td></tr>';
+                } else {
+                    tbody.innerHTML = rowsHTML;
+                }
+                
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-3 px-4">${renderError(err)}</td></tr>`;
+            }
+        }
+
+        async function loadCrmClusters() {
+            const grid = document.getElementById('radar-grid');
+            if (!grid) return;
+            grid.innerHTML = '<div class="text-[#ADFA1D] font-mono text-sm">Calculando vectores de afinidad...</div>';
+            try {
+                const clusters = await invoke('get_crm_clusters');
+                grid.innerHTML = '';
+                clusters.forEach(c => {
+                    let affinityColor = 'text-emerald-400';
+                    let btnColor = 'hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5';
+                    let btnText = '> DISPARAR PROMOCIÓN';
+                    let btnAction = 'alert("Generando texto promocional...")';
+                    
+                    if (c.affinity < 0.3) {
+                        affinityColor = 'text-red-400';
+                        btnColor = 'hover:border-red-400/50 text-gray-500 hover:text-red-400 bg-white/5 hover:bg-red-400/5 cursor-not-allowed';
+                        btnText = '> AFINIDAD INSUFICIENTE';
+                        btnAction = '';
+                    } else if (c.affinity < 0.6) {
+                        affinityColor = 'text-yellow-400';
+                    }
+
+                    const card = `
+                    <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
+                         <div>
+                             <div class="flex justify-between items-start mb-4">
+                                 <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">${c.name}</span>
+                                 <span class="text-xs text-gray-500 font-mono">${c.dimension}</span>
+                             </div>
+                             <p class="text-xs text-gray-400 font-mono mb-4 h-16 overflow-hidden">${c.description}</p>
+                             <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">${c.size.toLocaleString()} Entidades</span></div>
+                             <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="${affinityColor}">${c.affinity.toFixed(2)}</span></div>
+                         </div>
+                         <button class="mt-6 border border-white/10 ${btnColor} px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group" onclick='${btnAction}'>
+                             <span>${btnText}</span>
+                             <span class="opacity-0 group-hover:opacity-100 transition-opacity">WHATSAPP</span>
+                         </button>
+                     </div>
+                    `;
+                    grid.innerHTML += card;
+                });
+            } catch (err) {
+                grid.innerHTML = renderError(err);
+            }
+        }
+
         function switchTab(event, viewId) {
             if (event) event.preventDefault();
             
@@ -303,6 +642,14 @@
             
             const targetView = document.getElementById(viewId);
             if (targetView) {
+            if (viewId === 'view-radar') {
+                loadCrmClusters();
+            }
+            if (viewId === 'view-cadena') {
+                loadCadena();
+            }
+
+
                 targetView.classList.remove('hidden');
                 targetView.classList.add('flex');
             }
@@ -367,8 +714,8 @@
 
                 for (const [sku, tensores] of Object.entries(inventory)) {
                     for (const tensor of tensores) {
-                        if(tensor.cost_usd) {
-                            totalValue += parseFloat(tensor.cost_usd) * parseFloat(tensor.current_quantity);
+                        if(tensor.c_usd !== undefined && tensor.c_usd !== null) {
+                            totalValue += parseFloat(tensor.c_usd) * parseFloat(tensor.q_actual);
                         }
                         totalItems += 1;
                     }
@@ -439,10 +786,10 @@
             const activeLot = lotes[0]; // El lote más reciente
             
             let totalQty = 0;
-            lotes.forEach(l => { totalQty += parseFloat(l.current_quantity); });
+            lotes.forEach(l => { totalQty += parseFloat(l.q_actual); });
             
-            const costUsd = parseFloat(activeLot.cost_usd);
-            const pFloor = costUsd * 1.15; // 15% Prima de riesgo base estocástica (simplificada para demo UI)
+            const costUsd = parseFloat(activeLot.c_usd);
+            const pFloor = costUsd * 1.15; // 15% Prima de riesgo base estocástica
 
             activeSkuData = {
                 sku: sku,
@@ -565,7 +912,7 @@
             anomaliesContainer.classList.add('hidden');
 
             try {
-                const report = await invoke('analyze_data_source', { path: path });
+                const report = await invoke('scan_entropy', { path: path });
                 currentSchema = report.schema_inferred;
                 
                 status.innerText = `Oráculo completado. ${report.total_rows_analyzed} filas analizadas.`;
@@ -615,7 +962,7 @@
             } catch (error) {
                 console.error("Error oráculo:", error);
                 status.innerText = "ERROR FATAL EN ORÁCULO";
-                container.innerHTML = `<div class='col-span-2 text-red-500 break-words'>${error}</div>`;
+                container.innerHTML = `${renderError(error)}`;
             }
         }
 
@@ -631,9 +978,16 @@
             btn.disabled = true;
 
             try {
-                const result = await invoke('execute_ingestion', { 
+                const mappings = {};
+                if (currentSchema.product_id_col) mappings["ID_ENTIDAD"] = currentSchema.product_id_col[0];
+                if (currentSchema.qty_col) mappings["QTY"] = currentSchema.qty_col[0];
+                if (currentSchema.price_col) mappings["PRICE"] = currentSchema.price_col[0];
+                if (currentSchema.cost_col) mappings["COST"] = currentSchema.cost_col[0];
+
+                const result = await invoke('execute_agnostic_ingestion', { 
                     path: currentSourcePath, 
-                    schema: currentSchema,
+                    mappings: mappings,
+                    playbookRules: [],
                     activateSentinel: activateSentinel
                 });
                 
@@ -647,7 +1001,7 @@
 
             } catch (error) {
                 console.error("Error en transmutación:", error);
-                status.innerHTML = `<span class="text-red-500">> ERROR: ${error}</span>`;
+                status.innerHTML = `${renderError(error)}`;
                 btn.innerText = 'ERROR FATAL';
                 btn.classList.remove('animate-pulse');
             }
