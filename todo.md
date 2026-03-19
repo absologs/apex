@@ -11,19 +11,20 @@ Aquí están los pilares de ingeniería para blindar el sistema contra fallos de
 ### 1. Verificación Formal del Núcleo Matemático (TLA+)
 El código en Rust es seguro en memoria, pero la lógica tensorial requiere garantías algebraicas contra fallos conceptuales y 'agujeros de gusano' estocásticos.
 * **Qué falta:** 
-  Utilizar TLA+ (Temporal Logic of Actions) para modelar los estados del motor de precios y probar matemáticamente que, bajo cualquier combinación de inflación, volatilidad y entrada de datos, el sistema nunca podrá alcanzar un estado de 'ruina' ($P_{floor} < C_{repo}$).
+  Utilizar TLA+ (Temporal Logic of Actions) para modelar los estados del motor de precios. La tesis central del Oráculo es la "Supervivencia del Capital". Se debe escribir una especificación formal en TLA+ que abstraiga el cálculo de la inecuación de valor esperado.
+  **Aserción Obligatoria:** Modelar el estado del sistema bajo parámetros extremos combinados (Hiperinflación de 3 dígitos, Entropía/Merma > 50%, y Velocidad de Venta cercana a 0). El *Model Checker* (TLC) debe explorar exhaustivamente el árbol de estados para demostrar matemáticamente que existe un Invariante Absoluto: Bajo ninguna permutación finita el algoritmo permitirá que el "Precio de Supervivencia" ($P_{floor}$) caiga por debajo del "Costo de Reposición" ($C_{repo}$).
 
-### 2. Property-Based Testing (PBT) con `proptest`
+### 2. Property-Based Testing (PBT) con `proptest` [COMPLETADO]
 Sustituir la dependencia exclusiva de unit tests deterministas por un bombardeo aleatorizado para encontrar casos de borde impredecibles.
 * **Qué falta:** 
   Integrar el crate `proptest`. Definir invariantes estrictos (Ej. 'Independientemente de la base de datos de origen, el Ingestor Topológico siempre debe producir un vector dentro del espacio $\mathbb{R}^5$ con norma finita'). Garantizar el 'Agnosticismo' contra estructuras corruptas.
 
-### 3. Fuzzing Continuo (Robustez del Ingestor)
+### 3. Fuzzing Continuo (Robustez del Ingestor) [COMPLETADO]
 El ingestor (`EntropyScanner` / `UniversalByteAdapter`) es la superficie de ataque primaria al leer flujos de bytes crudos del exterior.
 * **Qué falta:** 
   Implementar `cargo-fuzz` (libFuzzer) para someter al motor de ingesta a trillones de mutaciones de archivos malformados (SQLite, JSON, CSV, binarios). Eliminar cualquier posibilidad de fuga de memoria o comportamiento errático en el parser.
 
-### 4. Replay Determinista y Resiliencia Eléctrica
+### 4. Replay Determinista y Resiliencia Eléctrica [COMPLETADO]
 Asegurar consistencia eventual perfecta frente a cortes de energía (falla térmica del hardware) durante cálculos o cristalizaciones masivas.
 * **Qué falta:** 
   Reforzar los invariantes de los logs WAL en SQLite y Sled. Proveer un sistema de reconstrucción desde cero (Replay determinista) que, ante un apagón violento a mitad de un `append_record`, audite los hashes SHA-256 en el reinicio y purgue los bloques incompletos, restaurando el estado inmutable exacto.
@@ -34,13 +35,14 @@ Mitigación absoluta contra Insider Threats (fugas físicas vía USB o manipulac
   Vincular la llave criptográfica de Sled y de la 'Cápsula de Inercia' a un módulo TPM (Trusted Platform Module) de la placa base (Geofencing por Hardware). Adicionalmente, el cargador de Tauri debe verificar el hash del binario de Rust al arrancar; cualquier mutación gatilla un bloqueo automático (Self-Destruct Sequence).
 
 ### 6. Aislamiento de Procesos (Sandboxing de Drivers WASM)
-Preparación para la escalabilidad horizontal y el soporte de formatos opacos (Legacy ERPs).
+Preparación para la escalabilidad horizontal y el soporte de bases de datos cerradas (Legacy ERPs como SAP u Oracle).
 * **Qué falta:** 
-  Ejecutar procesos de ingesta pesados o 'drivers' de terceros en hilos con privilegios restringidos usando WebAssembly (`wasmtime`). Esto asegurará que, si un driver inyectado colapsa o entra en un loop infinito, la falla quede contenida en un *sandbox* sin acceso a la memoria RAM de APEX o las llaves criptográficas principales.
+  Integrar el runtime `wasmtime` dentro de `apex-core`. Transformar la arquitectura del Agente Centinela para que admita *Drivers de Extracción* externos compilados en WebAssembly (`.wasm`).
+  **Aislamiento Físico y de Memoria:** Garantizar que estos módulos de terceros operen en un entorno "Zero-Trust". El driver WASM debe estar estrictamente confinado: carecerá de permisos de red, de acceso a disco, y de acceso al espacio de memoria principal de Rust. Su única interfaz será recibir bytes opacos de la base de datos origen y devolver los datos purificados a la memoria intermedia cedida por APEX. Esto impedirá que fugas de memoria o ciclos infinitos en el código de terceros colapsen el motor termodinámico central.
 
 ---
 
-## PRIORIDAD SUGERIDA: EL ESCUDO CONTRA LA ENTROPÍA FÍSICA
-Comenzar obligatoriamente por el **Fuzzing Continuo (Punto 3)** y el **Replay Determinista (Punto 4)**. 
+## SIGUIENTES PASOS SUGERIDOS:
+El "Escudo contra la Entropía Física" (PBT, Fuzzing y Resiliencia Eléctrica) ya se encuentra **completado**.
 
-En entornos no controlados, la hostilidad principal proviene de la entropía de los datos inyectados por los Data Clerks y de las fallas de suministro eléctrico. Asegurar que ni los archivos basura ni los apagones abruptos pueden corromper el Ledger es el paso fundacional antes de escalar hacia las matemáticas teóricas (TLA+) y el hardware especializado (TPM).
+Para consolidar el dogma *DoD-GRADE*, el siguiente esfuerzo debe dirigirse a la **Verificación Formal (TLA+) (Punto 1)** para asegurar matemáticamente la invulnerabilidad de la lógica de negocio frente a la inflación extrema. Alternativamente, si el foco a corto plazo es la penetración de mercado y compatibilidad con sistemas cerrados, se deberá priorizar el **Sandboxing WASM (Punto 6)**.
