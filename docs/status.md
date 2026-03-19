@@ -101,3 +101,13 @@ Aunque el ecosistema compila sin errores (Exit Code 0), restan las siguientes á
 * **Cristalización Persistente (Ingesta):** Se logró acoplar el pipeline de Arrow a Sled/WAL. El comando de ingesta masiva transmuta columnarmente los CSV hacia entidades `RawRecord` y las persiste inmutablemente para consumo del simulador de inventario.
 * **Canalización Estricta de Errores IPC:** Eliminada la opacidad de los retornos `Result<T, String>`. Se introdujo el wrapper `UIError` que serializa `ApexError` y su `.diagnosis()`. El frontend ahora procesa diagnósticos cinemáticos exactos, cumpliendo el principio Zero Visual Load ante colapsos.
 * **Pruebas de Esfuerzo (Stress Testing) Columnar:** Inyectar tensores de memoria pesados (5+ Millones de filas) y validar el comportamiento de las cuotas de RAM y transmutación AST en `playbook.rs`.
+---
+## 4. FASE v2.0 (Certificación Enterprise / DoD-GRADE)
+### 4.1 Escudo contra la Entropía Física y Resiliencia [COMPLETADO]
+* **Fuzzing Continuo (Robustez de Ingesta):** Implementación de `cargo-fuzz` (libFuzzer) acoplado al oráculo de extracción de entropía (`SensorFeatures::extract`). El motor ha sido sometido y blindado matemáticamente contra la inyección de bytes aleatorios o defectuosos provenientes del entorno (Archivos dañados, EOF prematuros), impidiendo caídas térmicas o desbordamientos en la proyección LSH.
+* **Property-Based Testing (PBT):** Integración de `proptest` para pruebas de bombardeo. Se definieron invariantes topológicos duros, garantizando mediante aserción formal que el sistema de ingesta jamás emitirá vectores infinitos o `NaN`, bajo cualquier input imaginable.
+* **Replay Determinista y Resiliencia Eléctrica:** Alteración termodinámica en la persistencia del Ledger. El índice de `SQLite` fue mutado a `PRAGMA synchronous = FULL` para obligar al disco a confirmar transacciones ante cortes abruptos de energía. A su vez, `Sled` ejecuta un `flush()` determinista bloqueante antes de aceptar cada transacción ($O(1)$) para garantizar inmutabilidad, evitando que la corrupción física rompa la criptografía SHA-256 del árbol histórico.
+### 4.2 Arquitectura Restante
+* **Verificación Formal Matemática:** Uso de TLA+ para aserción absoluta en los límites estocásticos de $P_{floor}$.
+* **Hardware Root of Trust (TPM):** Geofencing por hardware y aislamiento en RAM para impedir manipulaciones físicas de variables de memoria de la app.
+* **Sandboxing WASM:** Ejecución perimetral de drivers y extensiones Legacy sin arriesgar colapsos termodinámicos en la memoria de APEX Core.

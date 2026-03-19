@@ -2,6 +2,7 @@ use crate::models::RawRecord;
 use crate::tensor::LotTensor;
 use rusqlite::Connection;
 use rust_decimal::Decimal;
+use sha2::{Digest, Sha256};
 use sled::Db;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -28,7 +29,7 @@ impl Ledger {
         // Configuración de Grado Militar / Alta Concurrencia (WAL mode)
         conn.execute_batch(
             "PRAGMA journal_mode = WAL;
-             PRAGMA synchronous = NORMAL;
+             PRAGMA synchronous = FULL;
              CREATE TABLE IF NOT EXISTS records_index (
                  tx_id TEXT PRIMARY KEY,
                  product_id TEXT NOT NULL,
@@ -38,6 +39,8 @@ impl Ledger {
         )
         .map_err(|e| format!("Error inicializando base de datos SQLite: {}", e))?;
 
+        audit_integrity(&conn, &sled_db)?;
+
         Ok(Self {
             sqlite_conn: Arc::new(Mutex::new(conn)),
             sled_db,
@@ -45,9 +48,13 @@ impl Ledger {
     }
 
     /// Añade de forma inmutable un registro aceptado
-    pub fn append_record(&self, record: &RawRecord, sha256_hash: &str) -> Result<(), String> {
+    pub fn append_record(&self, record: &RawRecord, _sha256_hash: &str) -> Result<(), String> {
         let payload =
             serde_json::to_vec(record).map_err(|e| format!("Error serializando payload: {}", e))?;
+
+        let mut hasher = Sha256::new();
+        hasher.update(&payload);
+        let computed_hash = format!("{:x}", hasher.finalize());
 
         self.sled_db
             .insert(&record.tx_id, payload)
@@ -63,12 +70,17 @@ impl Ledger {
             (
                 &record.tx_id,
                 &record.product_id,
-                sha256_hash,
+                &computed_hash,
                 record.tx_timestamp_sec,
             ),
         )
         .map_err(|e| format!("Error escribiendo índice SQLite: {}", e))?;
 
+        // Garantizar resiliencia eléctrica: Forzamos flush determinista antes de confirmar el OK
+        let _ = self
+            .sled_db
+            .flush()
+            .map_err(|e| format!("Error en flush determinista de Sled: {}", e))?;
         Ok(())
     }
 
@@ -125,11 +137,16 @@ impl Ledger {
             }
             if rec.qty_delta > Decimal::ZERO {
                 // INGRESO: Se crea un nuevo tensor de lote discreto
+                let fx_actual = self.get_last_bcv_rate();
                 let tensor = LotTensor::new(
                     rec.tx_id.clone(),
                     rec.product_id.clone(),
                     rec.qty_delta,
-                    Decimal::ONE, // Fx mock para V1
+                    if fx_actual == Decimal::ZERO {
+                        Decimal::ONE
+                    } else {
+                        fx_actual
+                    },
                     rec.cost_usd,
                 );
                 inventory
@@ -236,4 +253,72 @@ impl Ledger {
             Ok(None)
         }
     }
+}
+
+fn audit_integrity(conn: &Connection, sled_db: &Db) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare("SELECT tx_id, sha256_hash FROM records_index")
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut to_delete_sqlite = Vec::new();
+    let mut valid_tx_ids = std::collections::HashSet::new();
+
+    for row_res in rows {
+        let (tx_id, expected_hash) = row_res.map_err(|e| e.to_string())?;
+
+        match sled_db.get(tx_id.as_bytes()) {
+            Ok(Some(payload)) => {
+                let mut hasher = Sha256::new();
+                hasher.update(&payload);
+                let computed_hash = format!("{:x}", hasher.finalize());
+
+                if expected_hash != computed_hash && expected_hash != "ingesta_masiva" {
+                    to_delete_sqlite.push(tx_id.clone());
+                } else {
+                    valid_tx_ids.insert(tx_id);
+                }
+            }
+            Ok(None) | Err(_) => {
+                to_delete_sqlite.push(tx_id.clone());
+            }
+        }
+    }
+
+    for tx_id in &to_delete_sqlite {
+        conn.execute("DELETE FROM records_index WHERE tx_id = ?1", [tx_id])
+            .map_err(|e| e.to_string())?;
+        let _ = sled_db.remove(tx_id.as_bytes());
+    }
+
+    let system_keys = [
+        b"LAST_BCV_RATE".to_vec(),
+        b"SENTINEL_CONFIG".to_vec(),
+        b"LATEST_SNAPSHOT".to_vec(),
+    ];
+    let mut to_delete_sled = Vec::new();
+
+    for (key_bytes, _) in sled_db.iter().flatten() {
+        if system_keys.contains(&key_bytes.to_vec()) {
+            continue;
+        }
+        if let Ok(key_str) = String::from_utf8(key_bytes.to_vec())
+            && !valid_tx_ids.contains(&key_str)
+        {
+            to_delete_sled.push(key_bytes);
+        }
+    }
+
+    for key in to_delete_sled {
+        let _ = sled_db.remove(key);
+    }
+
+    let _ = sled_db.flush();
+
+    Ok(())
 }
