@@ -1,14 +1,14 @@
-use arrow::record_batch::RecordBatch;
+use arrow::array::{Array, as_string_array};
 use arrow::csv::ReaderBuilder;
 use arrow::datatypes::{Schema, SchemaRef};
-use arrow::array::{as_string_array, Array};
+use arrow::record_batch::RecordBatch;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use siphasher::sip::SipHasher13;
 use std::collections::HashMap;
+use std::fs::File;
 use std::hash::Hasher;
 use std::sync::{Arc, LazyLock};
-use std::fs::File;
 
 static RE_PRODUCT: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)^(sku|item_code|codigo|id_producto|articulo|id)$"));
@@ -85,10 +85,10 @@ pub struct CsvAdapter {
 impl CsvAdapter {
     pub fn new(path: &str, batch_size: usize) -> Result<Self, String> {
         let file = File::open(path).map_err(|e| format!("Error abriendo CSV: {}", e))?;
-        
-        let schema = arrow::csv::reader::infer_schema_from_files(
-            &[path.to_string()], b',', Some(100), true
-        ).map_err(|e| format!("Error infiriendo esquema: {}", e))?;
+
+        let schema =
+            arrow::csv::reader::infer_schema_from_files(&[path.to_string()], b',', Some(100), true)
+                .map_err(|e| format!("Error infiriendo esquema: {}", e))?;
 
         let reader = ReaderBuilder::new(Arc::new(schema))
             .with_batch_size(batch_size)
@@ -137,11 +137,13 @@ impl UniversalIngester {
 
         for field in schema.fields() {
             let name = field.name().trim();
-            if RE_PRODUCT.as_ref().is_ok_and(|re| re.is_match(name)) && map.product_id_col.is_none() {
+            if RE_PRODUCT.as_ref().is_ok_and(|re| re.is_match(name)) && map.product_id_col.is_none()
+            {
                 map.product_id_col = Some((name.to_string(), Confidence::High));
             } else if RE_QTY.as_ref().is_ok_and(|re| re.is_match(name)) && map.qty_col.is_none() {
                 map.qty_col = Some((name.to_string(), Confidence::High));
-            } else if RE_PRICE.as_ref().is_ok_and(|re| re.is_match(name)) && map.price_col.is_none() {
+            } else if RE_PRICE.as_ref().is_ok_and(|re| re.is_match(name)) && map.price_col.is_none()
+            {
                 map.price_col = Some((name.to_string(), Confidence::High));
             } else if RE_COST.as_ref().is_ok_and(|re| re.is_match(name)) && map.cost_col.is_none() {
                 map.cost_col = Some((name.to_string(), Confidence::High));
@@ -156,29 +158,26 @@ impl UniversalIngester {
     }
 
     /// Analiza un lote de registros columnar para auditar la entropía estructural.
-    pub fn audit_data_batch(
-        schema: &SchemaMap,
-        batch: &RecordBatch,
-    ) -> DataTopologyReport {
+    pub fn audit_data_batch(schema: &SchemaMap, batch: &RecordBatch) -> DataTopologyReport {
         let mut anomalies = Vec::new();
         let num_rows = batch.num_rows();
         let schema_batch = batch.schema();
 
         // Auditoría columnar
-        if let Some((col, _)) = &schema.qty_col {
-            if let Ok(idx) = schema_batch.index_of(col) {
-                let array = as_string_array(batch.column(idx));
-                for i in 0..num_rows {
-                    if !array.is_null(i) {
-                        let val = array.value(i);
-                        if !RE_NUMERIC.as_ref().is_ok_and(|re| re.is_match(val.trim())) {
-                            anomalies.push(Anomaly {
-                                column_name: col.clone(),
-                                raw_value: val.to_string(),
-                                issue_description: "Cantidad no es determinista.".to_string(),
-                                row_index: i,
-                            });
-                        }
+        if let Some((col, _)) = &schema.qty_col
+            && let Ok(idx) = schema_batch.index_of(col)
+        {
+            let array = as_string_array(batch.column(idx));
+            for i in 0..num_rows {
+                if !array.is_null(i) {
+                    let val = array.value(i);
+                    if !RE_NUMERIC.as_ref().is_ok_and(|re| re.is_match(val.trim())) {
+                        anomalies.push(Anomaly {
+                            column_name: col.clone(),
+                            raw_value: val.to_string(),
+                            issue_description: "Cantidad no es determinista.".to_string(),
+                            row_index: i,
+                        });
                     }
                 }
             }
@@ -267,7 +266,7 @@ impl SensorFeatures {
             let mut hasher = SipHasher13::new_with_keys(0x4115_EED5, 0x4115_EED5);
             hasher.write(line);
             let hll_hash = hasher.finish();
-            let bin = (hll_hash & 0x3F) as usize; 
+            let bin = (hll_hash & 0x3F) as usize;
             let zeros = (hll_hash >> 6).leading_zeros() as u8 + 1;
             if zeros > hll_bins[bin] {
                 hll_bins[bin] = zeros;
@@ -279,10 +278,18 @@ impl SensorFeatures {
         values[1] = text_count as f32 / total;
         values[2] = date_count as f32 / total;
 
-        let mean = if num_count > 0 { sum / (num_count as f64) } else { 0.0 };
+        let mean = if num_count > 0 {
+            sum / (num_count as f64)
+        } else {
+            0.0
+        };
         values[3] = mean as f32;
 
-        let var = if num_count > 0 { (sum_sq / (num_count as f64)) - (mean * mean) } else { 0.0 };
+        let var = if num_count > 0 {
+            (sum_sq / (num_count as f64)) - (mean * mean)
+        } else {
+            0.0
+        };
         values[4] = var as f32;
 
         let mut harmonic_mean = 0.0_f64;

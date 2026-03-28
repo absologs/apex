@@ -1,11 +1,11 @@
-use arrow::array::{StringBuilder, Decimal128Builder};
-use arrow::datatypes::{DataType, Field, Schema};
-use arrow::record_batch::RecordBatch;
-use arrow::ipc::writer::StreamWriter;
-use std::sync::Arc;
-use std::collections::HashMap;
-use crate::tensor::LotTensor;
 use crate::playbook::TransformError;
+use crate::tensor::LotTensor;
+use arrow::array::{Decimal128Builder, StringBuilder};
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::ipc::writer::StreamWriter;
+use arrow::record_batch::RecordBatch;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Error específico de la capa de transporte Arrow
 #[derive(Debug)]
@@ -34,7 +34,7 @@ pub fn inventory_to_arrow_ipc(
     inventory: &HashMap<String, Vec<LotTensor>>,
 ) -> Result<Vec<u8>, ArrowError> {
     let schema = get_apex_schema();
-    
+
     let mut lote_id_builder = StringBuilder::new();
     let mut product_id_builder = StringBuilder::new();
     let mut q_actual_builder = Decimal128Builder::new();
@@ -46,12 +46,12 @@ pub fn inventory_to_arrow_ipc(
         for lot in lots {
             lote_id_builder.append_value(&lot.lote_id);
             product_id_builder.append_value(product_id);
-            
+
             let to_i128 = |d: rust_decimal::Decimal| -> i128 {
                 let mantissa = d.mantissa(); // i128 puro
                 let scale = d.scale() as i32;
                 let target_scale = 28;
-                
+
                 if target_scale >= scale {
                     mantissa * 10i128.pow((target_scale - scale) as u32)
                 } else {
@@ -76,15 +76,18 @@ pub fn inventory_to_arrow_ipc(
             Arc::new(fx_origen_builder.finish()),
             Arc::new(entropy_builder.finish()),
         ],
-    ).map_err(|e| ArrowError::Internal(e.to_string()))?;
+    )
+    .map_err(|e| ArrowError::Internal(e.to_string()))?;
 
     let mut buffer = Vec::new();
     {
         let mut writer = StreamWriter::try_new(&mut buffer, &schema)
             .map_err(|e: arrow::error::ArrowError| ArrowError::Internal(e.to_string()))?;
-        writer.write(&batch)
+        writer
+            .write(&batch)
             .map_err(|e: arrow::error::ArrowError| ArrowError::Internal(e.to_string()))?;
-        writer.finish()
+        writer
+            .finish()
             .map_err(|e: arrow::error::ArrowError| ArrowError::Internal(e.to_string()))?;
     }
 

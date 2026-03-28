@@ -1,7 +1,7 @@
-use arrow::record_batch::RecordBatch;
 use arrow::array::{StringArray, as_string_array};
-use arrow_cast::cast;
 use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatch;
+use arrow_cast::cast;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -26,7 +26,7 @@ pub enum TransformError {
 }
 
 /// Motor de Ejecución Columnar (Diseño Indestructible)
-/// Utiliza la potencia nativa de Rust sobre arrays de Arrow para garantizar 
+/// Utiliza la potencia nativa de Rust sobre arrays de Arrow para garantizar
 /// rendimiento máximo sin dependencia de kernels volátiles.
 pub fn execute_playbook(
     batch: &RecordBatch,
@@ -38,34 +38,41 @@ pub fn execute_playbook(
     for op in &playbook.operations {
         match op {
             TransformOp::TrimWhitespace(col_id) => {
-                let idx = batch.schema().index_of(col_id).map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
+                let idx = batch
+                    .schema()
+                    .index_of(col_id)
+                    .map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
                 let array = as_string_array(&columns[idx]);
-                
+
                 // Transformación optimizada por el compilador (LLVM Auto-vectorization)
-                let trimmed: StringArray = array.iter()
-                    .map(|opt| opt.map(|s| s.trim()))
-                    .collect();
+                let trimmed: StringArray = array.iter().map(|opt| opt.map(|s| s.trim())).collect();
                 columns[idx] = Arc::new(trimmed);
             }
             TransformOp::Uppercase(col_id) => {
-                let idx = batch.schema().index_of(col_id).map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
+                let idx = batch
+                    .schema()
+                    .index_of(col_id)
+                    .map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
                 let array = as_string_array(&columns[idx]);
-                
+
                 // Conversión de caso nativa rápida
-                let upped: StringArray = array.iter()
+                let upped: StringArray = array
+                    .iter()
                     .map(|opt| opt.map(|s| s.to_uppercase()))
                     .collect();
                 columns[idx] = Arc::new(upped);
             }
             TransformOp::CastToInteger(col_id) => {
-                let idx = batch.schema().index_of(col_id).map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
-                
+                let idx = batch
+                    .schema()
+                    .index_of(col_id)
+                    .map_err(|_| TransformError::ColumnNotFound(col_id.clone()))?;
+
                 // Limpieza previa: Los números con espacios fallan en el cast nativo
                 if *columns[idx].data_type() == DataType::Utf8 {
                     let array = as_string_array(&columns[idx]);
-                    let trimmed: StringArray = array.iter()
-                        .map(|opt| opt.map(|s| s.trim()))
-                        .collect();
+                    let trimmed: StringArray =
+                        array.iter().map(|opt| opt.map(|s| s.trim())).collect();
                     columns[idx] = Arc::new(trimmed);
                 }
 
@@ -80,6 +87,5 @@ pub fn execute_playbook(
     }
 
     let new_schema = Arc::new(Schema::new(fields));
-    RecordBatch::try_new(new_schema, columns)
-        .map_err(|e| TransformError::ArrowError(e.to_string()))
+    RecordBatch::try_new(new_schema, columns).map_err(|e| TransformError::ArrowError(e.to_string()))
 }

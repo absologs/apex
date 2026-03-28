@@ -38,9 +38,11 @@ async fn get_paralelo() -> Json<Option<Cotizacion>> {
 
 use std::sync::LazyLock;
 
-static DIV_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("div.recuadrotsmc").ok());
+static DIV_SELECTOR: LazyLock<Option<Selector>> =
+    LazyLock::new(|| Selector::parse("div.recuadrotsmc").ok());
 static SPAN_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("span").ok());
-static STRONG_SELECTOR: LazyLock<Option<Selector>> = LazyLock::new(|| Selector::parse("strong").ok());
+static STRONG_SELECTOR: LazyLock<Option<Selector>> =
+    LazyLock::new(|| Selector::parse("strong").ok());
 
 async fn fetch_bcv_oficial() -> Option<Cotizacion> {
     let client = reqwest::Client::builder()

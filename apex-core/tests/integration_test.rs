@@ -1,10 +1,10 @@
 use apex_core::ingest::UniversalIngester;
 use apex_core::oracle::Oracle;
+use arrow::array::StringArray;
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatch;
 use rust_decimal::Decimal;
 use std::sync::Arc;
-use arrow::datatypes::{DataType, Field, Schema};
-use arrow::array::StringArray;
-use arrow::record_batch::RecordBatch;
 
 #[test]
 fn test_oracle_survival_price_normal() {
@@ -53,7 +53,7 @@ fn test_universal_ingester_schema_inference() {
         Field::new("fecha", DataType::Utf8, false),
         Field::new("basura_legacy", DataType::Utf8, false),
     ]);
-    
+
     let schema_map = UniversalIngester::infer_schema(&schema);
     assert!(schema_map.product_id_col.is_some());
     assert!(schema_map.qty_col.is_some());
@@ -83,10 +83,11 @@ fn test_universal_ingester_audit() {
             Arc::new(qty_array),
             Arc::new(price_array),
         ],
-    ).unwrap();
+    )
+    .unwrap();
 
     let report = UniversalIngester::audit_data_batch(&schema_map, &batch);
-    
+
     // El auditor columnar actual verifica qty de manera estricta. Si necesitamos
     // auditar precio y sku en el test, debemos ajustar el auditor o el test.
     // Por ahora verificamos que al menos detecte la anomalía de cantidad que implementamos.
