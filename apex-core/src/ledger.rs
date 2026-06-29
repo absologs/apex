@@ -1,5 +1,5 @@
 use crate::models::RawRecord;
-use crate::tensor::LotTensor;
+use crate::nodes::{Infraestructura, Producto};
 use rusqlite::Connection;
 use rust_decimal::Decimal;
 use sha2::{Digest, Sha256};
@@ -16,7 +16,7 @@ pub struct Ledger {
     sled_db: Db,
 }
 
-type InventorySnapshot = (HashMap<String, Vec<LotTensor>>, i64);
+type InventorySnapshot = (HashMap<String, (Producto, Infraestructura)>, i64);
 
 impl Ledger {
     pub fn new(db_path: &str) -> Result<Self, String> {
@@ -118,8 +118,9 @@ impl Ledger {
 
     /// Filtro y Proyector Financiero (Máquina de Estados)
     /// Transforma el Event Sourcing en un mapa de Tensores Remanentes por Producto (FIFO para Lotes)
-    pub fn project_current_inventory(&self) -> Result<HashMap<String, Vec<LotTensor>>, String> {
-        // Intentar cargar snapshot
+    pub fn project_current_inventory(
+        &self,
+    ) -> Result<HashMap<String, (Producto, Infraestructura)>, String> {
         let (mut inventory, mut last_ts) = match self.load_snapshot() {
             Ok(Some((inv, ts))) => (inv, ts),
             _ => (HashMap::new(), -1),
@@ -135,56 +136,36 @@ impl Ledger {
             if rec.tx_timestamp_sec > last_ts {
                 last_ts = rec.tx_timestamp_sec;
             }
-            if rec.qty_delta > Decimal::ZERO {
-                // INGRESO: Se crea un nuevo tensor de lote discreto
-                let fx_actual = self.get_last_bcv_rate();
-                let tensor = LotTensor::new(
-                    rec.tx_id.clone(),
-                    rec.product_id.clone(),
-                    rec.qty_delta,
-                    if fx_actual == Decimal::ZERO {
-                        Decimal::ONE
-                    } else {
-                        fx_actual
+            let entry = inventory.entry(rec.product_id.clone()).or_insert_with(|| {
+                (
+                    Producto {
+                        sku_id: rec.product_id.clone(),
+                        costo_reposicion_esperado: rec.cost_usd,
+                        precio_actual: rec.price_usd,
+                        velocidad_salida: Decimal::ZERO,
+                        cluster_id: "default".to_string(),
                     },
-                    rec.cost_usd,
-                );
-                inventory
-                    .entry(rec.product_id.clone())
-                    .or_insert_with(Vec::new)
-                    .push(tensor);
+                    Infraestructura {
+                        ubicacion_id: "global".to_string(),
+                        sku_id: rec.product_id.clone(),
+                        tiempo_estancia: 0,
+                        stock_actual: 0,
+                    },
+                )
+            });
+
+            let qty_u32 = rec.qty_delta.abs().to_string().parse::<u32>().unwrap_or(0);
+
+            if rec.qty_delta > Decimal::ZERO {
+                entry.1.stock_actual += qty_u32;
+                entry.0.costo_reposicion_esperado = rec.cost_usd;
             } else {
-                // EGRESO: Se descuenta la cantidad de los lotes más antiguos (FIFO) o más recientes (LIFO)
-                // Usaremos LIFO financiero como indica la arquitectura
-                let mut remaining_to_deduct = rec.qty_delta.abs();
-                if let Some(lotes) = inventory.get_mut(&rec.product_id) {
-                    // Iterar desde el más reciente al más antiguo (LIFO)
-                    for lote in lotes.iter_mut().rev() {
-                        if remaining_to_deduct <= Decimal::ZERO {
-                            break;
-                        }
-                        if lote.q_actual > Decimal::ZERO {
-                            if lote.q_actual >= remaining_to_deduct {
-                                lote.q_actual -= remaining_to_deduct;
-                                remaining_to_deduct = Decimal::ZERO;
-                            } else {
-                                remaining_to_deduct -= lote.q_actual;
-                                lote.q_actual = Decimal::ZERO;
-                            }
-                        }
-                    }
-                }
+                entry.1.stock_actual = entry.1.stock_actual.saturating_sub(qty_u32);
+                entry.0.velocidad_salida += Decimal::ONE;
             }
         }
 
-        // Limpiar lotes vacíos para optimizar memoria
-        for lotes in inventory.values_mut() {
-            lotes.retain(|l| l.q_actual > Decimal::ZERO);
-        }
-
-        // Guardar snapshot actualizado
         let _ = self.save_snapshot(&inventory, last_ts);
-
         Ok(inventory)
     }
 
@@ -233,7 +214,7 @@ impl Ledger {
 
     fn save_snapshot(
         &self,
-        inventory: &HashMap<String, Vec<LotTensor>>,
+        inventory: &HashMap<String, (Producto, Infraestructura)>,
         last_timestamp: i64,
     ) -> Result<(), String> {
         let snapshot_data = serde_json::to_vec(&(inventory, last_timestamp))

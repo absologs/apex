@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "apex-core",
+    "apex-core", "apex-driver-csv",
     "apex-ui",
-    "api_dolar"
+    "api_dolar",
+    "marketplace-ui/src-tauri"
 ]
 resolver = "2"

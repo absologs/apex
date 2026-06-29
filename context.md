@@ -1,0 +1,5 @@
+En esta ruta tienes las capturas de pantalla correspondientes. Las que comienzan por A son de APEX y las que comienzan por M son del marketplace. APEX tiene verbose complejo y que no se entiende. No es clara su función, no se comporta como una app mobile nativa, aún se ve el bar scroll, también permite hacer zoom cuando no debería y si miras el layout superior no muestra el precio oficial del dólar y se ve mal "encuadrado". Vamos a refactorizar todo el GUI a los ejemplos dados en este input.
+
+El marketplace es genérico y habla de millones de productos. Son miles de productos y también debe mostrar el precio oficial del dólar. El marketplace también tiene scroll bar y permite hacer zoom. El marketplace debe ser básicamente una copia visual de Amazon: sencillo, elegante y directo.
+
+Debes trabajar la estética y las palabras de APEX y el marketplace. Luego trabajaremos para conectar el backend por servidor. Elimina cualquier placeholder. ¿Algo que se me pase? Si no, crea una lista de tareas dentro de un .md y ejecuta

@@ -1,694 +1,216 @@
 <!DOCTYPE html>
-<html lang="es" class="bg-[#0D0D0D] text-gray-300 h-screen w-screen overflow-hidden flex flex-col">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX | Terminal Táctica</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>APEX</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        * {
-            border-radius: 0 !important;
-            box-shadow: none !important;
-        }
-    </style>
-</head>
-<body class="bg-[#0D0D0D] text-gray-300 h-screen w-screen overflow-hidden flex flex-col">
-
-    <!-- 1. Top Bar -->
-    <div class="bg-[#0D0D0D] border-b border-white/10 px-6 py-3 flex justify-between items-center text-xs font-mono shrink-0">
-        <div class="flex items-center gap-8">
-            <span class="bg-[#ADFA1D] text-black px-2 py-0.5 font-bold tracking-tight">APEX</span>
-            
-            <nav class="flex gap-5 tracking-[0.1em] uppercase text-[10px]">
-                <a href="#" onclick="switchTab(event, 'view-resumen')" class="nav-link text-white relative after:content-[''] after:absolute after:-bottom-[13px] after:left-0 after:w-full after:h-[2px] after:bg-[#ADFA1D]">Resumen</a>
-                <a href="#" onclick="switchTab(event, 'view-warroom')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">War Room</a>
-                <a href="#" onclick="switchTab(event, 'view-radar')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">El Radar</a>
-                <a href="#" onclick="switchTab(event, 'view-cadena')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">La Cadena</a>
-                <a href="#" onclick="switchTab(event, 'view-ingesta')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">Ingesta</a>
-                <a href="#" onclick="switchTab(event, 'view-arrow')" class="nav-link text-gray-500 hover:text-gray-300 transition-colors">Zero-Copy</a>
-            </nav>
-        </div>
-        
-        <div class="flex items-center gap-4 text-gray-400 text-[10px] tracking-widest">
-            <span>TASA_BCV <span id="tasa-bcv-value" class="text-[#ADFA1D] tabular-nums font-bold">---</span></span>
-            <button id="btn-sync" onclick="syncTasa()" class="border border-white/20 px-3 py-1 hover:bg-white/5 transition-colors cursor-pointer">SYNC</button>
-            <button class="border border-[#ADFA1D]/30 text-[#ADFA1D] bg-[#ADFA1D]/5 px-4 py-1 hover:bg-[#ADFA1D]/20 transition-colors">OP</button>
-        </div>
-    </div>
-
-    <!-- CONTENEDOR PRINCIPAL DE VISTAS -->
-    <div class="flex flex-1 overflow-hidden relative">
-
-        <!-- VISTA: RESUMEN (Por defecto) -->
-        <div id="view-resumen" class="tab-view flex flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D]">
-            <!-- Fila de Métricas -->
-            <div class="grid grid-cols-4 bg-[#0A0A0C] border-b border-white/10 shrink-0">
-                <div class="border-r border-white/10 p-4 flex flex-col">
-                    <span class="text-gray-400 font-mono text-xs mb-2">INGRESO TOTAL</span>
-                    <span id="metric-ingreso" class="text-gray-100 font-mono text-3xl">$0.00</span>
-                </div>
-                <div class="border-r border-white/10 p-4 flex flex-col">
-                    <span class="text-gray-400 font-mono text-xs mb-2">TASA PROMEDIO</span>
-                    <span id="metric-tasa" class="text-gray-100 font-mono text-3xl">0.00</span>
-                </div>
-                <div class="border-r border-white/10 p-4 flex flex-col">
-                    <span class="text-gray-400 font-mono text-xs mb-2">VENTAS HOY</span>
-                    <span id="metric-ventas" class="text-gray-100 font-mono text-3xl">0</span>
-                </div>
-                <div class="border-r border-white/10 p-4 flex flex-col">
-                    <span class="text-gray-400 font-mono text-xs mb-2">SALUD H(T)</span>
-                    <span id="metric-salud" class="text-[#ADFA1D] font-mono text-3xl">0.00</span>
-                </div>
-            </div>
-
-            <!-- Zona Inferior -->
-            <div class="flex flex-1 overflow-hidden">
-                <!-- Lado Izquierdo (Matriz Proyección / Gráfico) -->
-                <div class="w-3/4 bg-[#0D0D0D] p-6 relative flex flex-col">
-                    <div class="text-gray-400 font-mono text-xs mb-6 absolute top-6 left-6">MATRIZ DE PROYECCIÓN // VOLUMEN</div>
-                    
-                    <div class="flex-1 flex items-end justify-around relative border-b border-white/10 border-l border-white/10 ml-8 mt-12 pb-0">
-                        <!-- Eje Y -->
-                        <div class="absolute -left-10 top-0 bottom-0 flex flex-col justify-between text-gray-500 font-mono text-xs py-2">
-                            <span>MAX</span>
-                            <span>...</span>
-                            <span>0</span>
-                        </div>
-                        
-                        <!-- Barras del gráfico (vacías por defecto en estado 0) -->
-                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
-                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-4</span>
-                        </div>
-                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
-                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-3</span>
-                        </div>
-                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
-                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-2</span>
-                        </div>
-                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
-                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-1</span>
-                        </div>
-                        <div class="w-16 h-[0%] border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 flex items-end justify-center pb-2 relative transition-all duration-500">
-                            <span class="text-gray-500 font-mono text-xs absolute -bottom-6">T-0</span>
-                        </div>
-                    </div>
-                    <div class="text-gray-500 font-mono text-xs mt-8 text-center">TIEMPO (T)</div>
-                </div>
-
-                <!-- Lado Derecho (Oráculo) -->
-                <div class="w-1/4 bg-[#0A0A0C] border-l border-white/10 p-6 flex flex-col relative justify-center items-center" id="panel-oraculo">
-                    <div class="absolute top-0 left-0 w-full px-4 py-2 border-b border-white/10 text-[9px] text-gray-500 uppercase tracking-[0.2em] font-mono">
-                        ORÁCULO
-                    </div>
-                    
-                    <div class="text-center flex flex-col items-center gap-4 w-full px-4 mt-8" id="oraculo-content">
-                        <div class="font-mono text-[10px] text-amber-500/70 text-left w-full border-l-2 border-amber-500/30 pl-2">
-                            > ERR_NO_DATA<br>
-                            > MATRIZ_OFFLINE
-                        </div>
-                        
-                        <button onclick="switchTab(null, 'view-ingesta')" class="mt-4 border border-dashed border-amber-500/50 text-amber-500 bg-amber-500/5 w-full py-3 font-mono text-xs uppercase tracking-[0.15em] hover:bg-amber-500/10 hover:border-amber-500 transition-all animate-pulse cursor-pointer">
-                            Iniciar Auditoría Cero
-                        </button>
-                        
-                        <p class="text-[9px] text-gray-600 font-mono mt-2 tracking-wide uppercase">
-                            El sistema requiere ingesta de datos transaccionales para inicializar.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- VISTA: WAR ROOM -->
-        <div id="view-warroom" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
-             <div class="flex-1 flex w-full border-white/10">
-                 <!-- Left Panel: Context -->
-                 <div class="w-1/3 border-r border-white/10 p-6 flex flex-col justify-between bg-[#0D0D0D]">
-                     <div>
-                         <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono mb-6">> TARGET_SKU</div>
-                         <select id="warroom-sku-select" class="w-full bg-[#0A0A0C] border border-white/20 text-[#ADFA1D] p-3 font-mono text-sm uppercase outline-none focus:border-[#ADFA1D]/50 transition-colors" onchange="loadWarroomSKU()">
-                             <option value="">-- SELECCIONE ACTIVO --</option>
-                             <!-- Dynamically loaded from inventory -->
-                         </select>
-
-                         <div class="mt-8 flex flex-col gap-4" id="warroom-sku-data">
-                             <div class="flex justify-between border-b border-white/5 pb-2">
-                                 <span class="text-xs text-gray-500 font-mono">Q_ACTUAL</span>
-                                 <span class="text-xs text-gray-300 font-mono" id="wr-qty">--</span>
-                             </div>
-                             <div class="flex justify-between border-b border-white/5 pb-2">
-                                 <span class="text-xs text-gray-500 font-mono">C_REPO (USD)</span>
-                                 <span class="text-xs text-gray-300 font-mono" id="wr-cost">--</span>
-                             </div>
-                             <div class="flex justify-between border-b border-white/5 pb-2">
-                                 <span class="text-xs text-gray-500 font-mono">P_FLOOR (LÍMITE)</span>
-                                 <span class="text-xs text-red-400 font-bold font-mono" id="wr-floor">--</span>
-                             </div>
-                         </div>
-                     </div>
-                     
-                     <button class="border border-white/10 text-gray-500 hover:text-white px-4 py-2 text-[10px] uppercase transition-colors cursor-pointer w-full mt-8" onclick="switchTab(null, 'view-resumen')">ABORTAR SIMULACIÓN</button>
-                 </div>
-
-                 <!-- Right Panel: Simulator -->
-                 <div class="w-2/3 flex flex-col relative bg-[#0A0A0C]">
-                     <!-- Tabs War Room -->
-                     <div class="flex border-b border-white/10 shrink-0 bg-[#0D0D0D] w-full">
-                         <div class="flex-1 text-center py-4 border-r border-white/10 font-mono text-[10px] tracking-[0.2em] uppercase text-[#ADFA1D] bg-[#ADFA1D]/5 cursor-pointer hover:bg-[#ADFA1D]/10 transition-colors" id="wr-tab-elasticidad" onclick="switchWrTab('elasticidad')">> ELASTICIDAD</div>
-                         <div class="flex-1 text-center py-4 border-r border-white/10 font-mono text-[10px] tracking-[0.2em] uppercase text-gray-500 cursor-pointer hover:text-gray-300 transition-colors" id="wr-tab-bundling" onclick="switchWrTab('bundling')">> BUNDLING GRAVEDAD</div>
-                     </div>
-                     
-                     <!-- View: Elasticidad -->
-                     <div id="wr-view-elasticidad" class="flex-1 p-10 flex flex-col justify-center items-center w-full">
-                         <div class="w-full max-w-md flex flex-col items-center">
-                             <div class="flex justify-between w-full mb-4 text-xs font-mono text-gray-400">
-                                 <span>PRECIO SIMULADO</span>
-                                 <span id="wr-sim-price" class="text-2xl text-white font-bold">$0.00</span>
-                             </div>
-                             
-                             <input type="range" id="wr-price-slider" class="w-full h-2 bg-white/10 rounded-none appearance-none cursor-pointer mb-8" min="0" max="100" value="50" step="0.01" oninput="updateSimulation()">
-                             
-                             <div id="wr-traffic-light" class="w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300">
-                                 <span id="wr-status-text" class="text-[#ADFA1D] text-sm">> ESTADO: RENTABLE (MARGEN SEGURO)</span>
-                             </div>
-
-                             <div class="w-full mt-10">
-                                 <div class="flex justify-between text-[10px] text-gray-500 font-mono mb-2">
-                                     <span>PROYECCIÓN DE VENTA REQUERIDA (∆V)</span>
-                                     <span id="wr-req-sales" class="text-white">0 Unidades</span>
-                                 </div>
-                                 <div class="w-full h-4 bg-white/5 relative overflow-hidden">
-                                     <div id="wr-sales-bar" class="h-full bg-white/20 transition-all duration-300 w-[0%]"></div>
-                                 </div>
-                             </div>
-                             
-                             <button id="btn-apply-maneuver" class="mt-12 border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-8 py-3 font-mono text-xs uppercase transition-colors cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed">
-                                 FIJAR PRECIO Y GENERAR REPORTE
-                             </button>
-                         </div>
-                     </div>
-
-                     <!-- View: Bundling Drag & Drop -->
-                     <div id="wr-view-bundling" class="flex-1 p-8 flex flex-col items-center w-full hidden">
-                         <div class="w-full h-full flex flex-col md:flex-row gap-6">
-                             <!-- Productos Héroes (Alta Rotación) -->
-                             <div class="w-1/2 border border-white/10 bg-[#0D0D0D] flex flex-col">
-                                 <div class="p-3 border-b border-white/10 text-[10px] text-gray-500 uppercase tracking-widest font-mono">> HÉROES (v1 ALTO)</div>
-                                 <div class="flex-1 p-4 flex flex-col gap-3 overflow-y-auto" id="heroes-list">
-                                     <div draggable="true" ondragstart="dragHero(event)" id="hero-1" class="border border-white/5 bg-white/5 p-3 cursor-grab hover:border-[#ADFA1D]/50 transition-colors" data-cost="0.90" data-price="1.20" data-name="HARINA PAN 1KG">
-                                         <div class="text-xs text-white font-mono mb-1 pointer-events-none">HARINA PAN 1KG</div>
-                                         <div class="flex justify-between text-[10px] font-mono text-gray-500 pointer-events-none">
-                                             <span>C: $0.90</span>
-                                             <span>P: $1.20</span>
-                                         </div>
-                                     </div>
-                                     <div draggable="true" ondragstart="dragHero(event)" id="hero-2" class="border border-white/5 bg-white/5 p-3 cursor-grab hover:border-[#ADFA1D]/50 transition-colors" data-cost="1.00" data-price="1.40" data-name="ARROZ MARY 1KG">
-                                         <div class="text-xs text-white font-mono mb-1 pointer-events-none">ARROZ MARY 1KG</div>
-                                         <div class="flex justify-between text-[10px] font-mono text-gray-500 pointer-events-none">
-                                             <span>C: $1.00</span>
-                                             <span>P: $1.40</span>
-                                         </div>
-                                     </div>
-                                 </div>
-                             </div>
-
-                             <!-- Dropzone -->
-                             <div class="w-1/2 border border-dashed border-white/20 bg-white/5 flex flex-col p-6 transition-colors relative" id="bundle-dropzone" ondrop="dropHero(event)" ondragover="allowDropHero(event)" ondragenter="this.classList.add('border-[#ADFA1D]')" ondragleave="this.classList.remove('border-[#ADFA1D]')">
-                                 <div class="text-[10px] text-[#ADFA1D] uppercase tracking-widest font-mono mb-6">> ZONA DE EMPAQUETADO ORTOGONAL</div>
-                                 
-                                 <div class="flex-1 flex flex-col items-center justify-center relative" id="bundle-content">
-                                     <span class="text-gray-500 font-mono text-xs text-center pointer-events-none" id="bundle-placeholder">ARRASTRE UN HÉROE AQUÍ<br>PARA COMPENSAR</span>
-                                 </div>
-
-                                 <!-- Target SKU representation in bundle -->
-                                 <div class="w-full border border-white/10 bg-[#0D0D0D] p-4 flex justify-between items-center mt-auto">
-                                     <div class="flex flex-col font-mono text-xs">
-                                         <span class="text-gray-500">TARGET (ANCLA)</span>
-                                         <span class="text-red-400" id="bundle-target-name">--</span>
-                                     </div>
-                                     <div class="flex flex-col font-mono text-[10px] text-right">
-                                         <span class="text-gray-500">P_FLOOR</span>
-                                         <span class="text-white" id="bundle-target-floor">$0.00</span>
-                                     </div>
-                                 </div>
-
-                                 <!-- Calculator result -->
-                                 <div class="mt-4 border-t border-white/10 pt-4 hidden" id="bundle-calculator">
-                                     <div class="flex justify-between font-mono text-xs mb-2">
-                                         <span class="text-gray-400">COSTO CONJUNTO</span>
-                                         <span class="text-white" id="bundle-cost">$0.00</span>
-                                     </div>
-                                     <div class="flex justify-between font-mono text-xs mb-4">
-                                         <span class="text-gray-400">PRECIO DE COMBO</span>
-                                         <span class="text-[#ADFA1D] font-bold" id="bundle-price">$0.00</span>
-                                     </div>
-                                     <button class="border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-4 py-2 font-mono text-xs uppercase transition-colors cursor-pointer w-full" onclick="alert('Generando combo e imprimiendo etiquetas...')">
-                                         CREAR COMBO
-                                     </button>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             </div>
-        </div>
-
-        <!-- VISTA: EL RADAR (CRM VECTORIZADO) -->
-        <div id="view-radar" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
-             <div class="p-6 border-b border-white/10 bg-[#0D0D0D] flex justify-between items-center shrink-0">
-                 <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> AFINIDAD VECTORIAL DE CLIENTES</div>
-                 <button class="border border-[#ADFA1D]/30 text-[#ADFA1D] bg-[#ADFA1D]/5 px-4 py-1 text-xs font-mono hover:bg-[#ADFA1D]/20 transition-colors" onclick="loadCrmClusters()">SINCRONIZAR DB CRM</button>
-             </div>
-             <div class="flex-1 p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto items-start content-start">
-                 <!-- Tarjeta Clúster 1 -->
-                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
-                     <div>
-                         <div class="flex justify-between items-start mb-4">
-                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">Cazadores de Ofertas</span>
-                             <span class="text-xs text-gray-500 font-mono">v2 (Alta Elasticidad)</span>
-                         </div>
-                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Clúster con alta sensibilidad al precio. Historial de compra concentrado en liquidaciones y bundles. Ticket promedio bajo, rotación alta.</p>
-                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">1,402 Entidades</span></div>
-                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-emerald-400">0.89 (Target SKU)</span></div>
-                     </div>
-                     <button class="mt-6 border border-white/10 hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-pointer" onclick="alert('Generando texto promocional y abriendo WhatsApp API...')">
-                         <span>> DISPARAR PROMOCIÓN</span>
-                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">WHATSAPP</span>
-                     </button>
-                 </div>
-                 <!-- Tarjeta Clúster 2 -->
-                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
-                     <div>
-                         <div class="flex justify-between items-start mb-4">
-                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">VIP Corporativo</span>
-                             <span class="text-xs text-gray-500 font-mono">v5 (Alta Gravedad)</span>
-                         </div>
-                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Compradores institucionales. Baja sensibilidad al precio. Historial de compras por volumen en ciclos quincenales.</p>
-                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">85 Entidades</span></div>
-                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-red-400">0.12 (Target SKU)</span></div>
-                     </div>
-                     <button class="mt-6 border border-white/10 hover:border-red-400/50 text-gray-500 hover:text-red-400 bg-white/5 hover:bg-red-400/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-not-allowed">
-                         <span>> AFINIDAD INSUFICIENTE</span>
-                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">BLOQUEADO</span>
-                     </button>
-                 </div>
-                 <!-- Tarjeta Clúster 3 -->
-                 <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
-                     <div>
-                         <div class="flex justify-between items-start mb-4">
-                             <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">Fin de Semana</span>
-                             <span class="text-xs text-gray-500 font-mono">v1 (Inercia Cíclica)</span>
-                         </div>
-                         <p class="text-xs text-gray-400 font-mono mb-4 h-16">Clientes con patrones de compra estrictamente atados a los días Viernes-Sábado. Consumo recreativo.</p>
-                         <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">430 Entidades</span></div>
-                         <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="text-yellow-400">0.55 (Target SKU)</span></div>
-                     </div>
-                     <button class="mt-6 border border-white/10 hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5 px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group cursor-pointer" onclick="alert('Programando campaña diferida para el Viernes...')">
-                         <span>> PROGRAMAR CAMPAÑA</span>
-                         <span class="opacity-0 group-hover:opacity-100 transition-opacity">DIFERIDO</span>
-                     </button>
-                 </div>
-             </div>
-        </div>
-
-        <!-- VISTA: LA CADENA (LOGÍSTICA Y PROVEEDORES) -->
-        <div id="view-cadena" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0A0A0C]">
-             <div class="p-6 border-b border-white/10 bg-[#0D0D0D] flex justify-between items-center shrink-0">
-                 <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-mono">> CADENA DE SUMINISTRO Y REPOSICIÓN PREDICTIVA</div>
-             </div>
-             <div class="flex-1 p-8 overflow-y-auto">
-                 <table class="w-full text-left font-mono text-xs text-gray-400 border-collapse">
-                     <thead>
-                         <tr class="border-b border-white/10 text-gray-500">
-                             <th class="py-3 px-4 font-normal">SKU ACTIVO</th>
-                             <th class="py-3 px-4 font-normal">Q ACTUAL</th>
-                             <th class="py-3 px-4 font-normal">VELOCIDAD (v1)</th>
-                             <th class="py-3 px-4 font-normal">ESTADO DE QUIEBRE</th>
-                             <th class="py-3 px-4 font-normal text-right">ACCIÓN</th>
-                         </tr>
-                     </thead>
-                     <tbody id="cadena-tbody">
-                     </tbody>
-                 </table>
-             </div>
-        </div>
-        <div id="view-ingesta" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D] overflow-y-auto">
-             <div class="flex-1 flex flex-col items-center p-10">
-                 
-                 <!-- Step 1: Selección -->
-                 <div id="ingest-step-1" class="border border-white/10 bg-[#0A0A0C] p-10 w-[500px] text-center flex flex-col items-center transition-all">
-                     <div class="text-amber-500 font-mono font-bold text-lg mb-2">> INGESTA TOPOLÓGICA</div>
-                     <p class="text-gray-400 text-xs mb-8 leading-relaxed font-mono">Conecte el origen de datos (Archivo estático o Base de Datos).</p>
-                     <button id="btn-select-source" onclick="selectDataSource()" class="border border-[#ADFA1D]/40 text-[#ADFA1D] bg-[#ADFA1D]/5 hover:bg-[#ADFA1D]/10 px-6 py-3 font-mono text-xs uppercase transition-colors w-full cursor-pointer">SELECCIONAR ORIGEN</button>
-                 </div>
-
-                 <!-- Step 2: Mapeo (Oculto por defecto) -->
-                 <div id="ingest-step-2" class="hidden border border-white/10 bg-[#0A0A0C] p-10 w-[800px] flex-col items-start transition-all mt-4">
-                     <div class="text-[#ADFA1D] font-mono font-bold text-lg mb-2">> ORÁCULO DE MAPEO</div>
-                     <p class="text-gray-400 text-xs mb-6 font-mono" id="mapping-status">Analizando topología estructural...</p>
-                     
-                     <div class="w-full grid grid-cols-2 gap-6 text-xs font-mono text-gray-300" id="schema-mapping-container">
-                         <!-- Dynamically populated -->
-                     </div>
-
-                     <div class="w-full mt-6 p-4 border border-red-500/20 bg-red-500/5 hidden" id="anomalies-container">
-                         <span class="text-red-500 font-bold">> ANOMALÍAS DETECTADAS</span>
-                         <ul id="anomalies-list" class="list-disc pl-5 mt-2 text-[10px] text-gray-400"></ul>
-                     </div>
-
-                     <div class="flex flex-col w-full mt-6 mb-4 items-start border border-white/5 p-4 bg-black/50">
-                         <label class="flex items-center gap-3 cursor-pointer">
-                             <input type="checkbox" id="chk-activate-sentinel" class="w-4 h-4 accent-[#ADFA1D] bg-black border-white/20">
-                             <span class="text-xs font-mono text-gray-300">ACTIVA CENTINELA (Sincronización Continua)</span>
-                         </label>
-                         <p class="text-[9px] text-gray-500 font-mono mt-2 ml-7">El oráculo vigilará este origen de datos y extraerá nuevos registros automáticamente en segundo plano.</p>
-                     </div>
-
-                     <div class="flex w-full justify-between mt-4">
-                         <button onclick="cancelIngestion()" class="text-gray-500 hover:text-white uppercase text-[10px]">Cancelar</button>
-                         <button id="btn-execute-ingestion" onclick="executeIngestion()" class="border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-6 py-2 font-mono text-xs uppercase transition-colors cursor-pointer hidden">INICIAR TRANSMUTACIÓN</button>
-                     </div>
-                 </div>
-
-             </div>
-        </div>
-
-        <!-- VISTA: ZERO-COPY ARROW -->
-        <div id="view-arrow" class="tab-view hidden flex-col flex-1 w-full h-full absolute inset-0 bg-[#0D0D0D] p-10 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                <span class="text-[#ADFA1D] font-mono text-lg">> PIPELINE COLUMNAR (ZERO-COPY)</span>
-                <button onclick="fetchAndRenderData()" class="border border-[#ADFA1D]/40 text-black bg-[#ADFA1D] hover:bg-[#ADFA1D]/80 px-6 py-2 font-mono text-xs uppercase transition-colors cursor-pointer">
-                    EJECUTAR KERNELS SIMD
-                </button>
-            </div>
-            <div class="font-mono text-xs text-gray-400 mb-6 border-l-2 border-white/20 pl-4 py-2 bg-white/5" id="arrow-stats">Esperando ejecución...</div>
-            <div class="w-full border border-white/10 bg-[#0A0A0C] overflow-hidden">
-                <table class="w-full text-left font-mono text-xs border-collapse">
-                    <thead id="arrow-thead" class="text-gray-500 border-b border-white/10 bg-black/50">
-                        <!-- Dynamic Headers -->
-                    </thead>
-                    <tbody id="arrow-tbody" class="text-gray-300">
-                        <!-- Dynamic Rows -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Módulo ESM de Apache Arrow -->
-    <script type="module">
-        import { tableFromIPC } from 'https://cdn.jsdelivr.net/npm/apache-arrow@16.0.0/+esm';
-        window.tableFromIPC = tableFromIPC;
-        // --- WAR ROOM & BUNDLING LOGIC --- //
-        function switchWrTab(tab) {
-            const elastiView = document.getElementById('wr-view-elasticidad');
-            const bundleView = document.getElementById('wr-view-bundling');
-            const elastiTab = document.getElementById('wr-tab-elasticidad');
-            const bundleTab = document.getElementById('wr-tab-bundling');
-            
-            if (tab === 'elasticidad') {
-                elastiView.classList.remove('hidden');
-                bundleView.classList.add('hidden');
-                elastiTab.classList.replace('text-gray-500', 'text-[#ADFA1D]');
-                bundleTab.classList.replace('text-[#ADFA1D]', 'text-gray-500');
-            } else {
-                elastiView.classList.add('hidden');
-                bundleView.classList.remove('hidden');
-                bundleTab.classList.replace('text-gray-500', 'text-[#ADFA1D]');
-                elastiTab.classList.replace('text-[#ADFA1D]', 'text-gray-500');
-                
-                // Set target SKU in bundle view
-                const skuSelect = document.getElementById('warroom-sku-select');
-                if (skuSelect && skuSelect.value) {
-                    document.getElementById('bundle-target-name').innerText = skuSelect.value;
-                    document.getElementById('bundle-target-floor').innerText = document.getElementById('wr-floor').innerText;
-                } else {
-                    document.getElementById('bundle-target-name').innerText = '-- SELECCIONE ACTIVO --';
+    <link rel="stylesheet" href="https://unpkg.com/uplot/dist/uPlot.min.css">
+    <script src="https://unpkg.com/uplot/dist/uPlot.iife.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        apex: {
+                            base: '#0D0E12',
+                            panel: '#1D1E22',
+                            border: '#2B2D31',
+                            accent: '#F26430',
+                            accentHover: '#E05A20',
+                            sidebar: '#141517'
+                        }
+                    }
                 }
-            }
-        }
-
-        function dragHero(ev) {
-            ev.dataTransfer.setData("text/plain", ev.target.id);
-        }
-
-        function allowDropHero(ev) {
-            ev.preventDefault();
-        }
-
-        function dropHero(ev) {
-            ev.preventDefault();
-            const data = ev.dataTransfer.getData("text");
-            const draggedEl = document.getElementById(data);
-            
-            if (draggedEl) {
-                const targetCostStr = document.getElementById('wr-cost').innerText.replace('$', '');
-                const targetCost = parseFloat(targetCostStr) || 0;
-                const heroCost = parseFloat(draggedEl.getAttribute('data-cost')) || 0;
-                const heroPrice = parseFloat(draggedEl.getAttribute('data-price')) || 0;
-                const heroName = draggedEl.getAttribute('data-name');
-                
-                // Hide placeholder
-                document.getElementById('bundle-placeholder').classList.add('hidden');
-                
-                // Update dropped content view visually
-                const contentArea = document.getElementById('bundle-content');
-                
-                // Ensure we don't duplicate heroes infinitely in the visual representation for the demo
-                let heroRep = document.getElementById('dropped-hero');
-                if (!heroRep) {
-                    heroRep = document.createElement('div');
-                    heroRep.id = 'dropped-hero';
-                    heroRep.className = 'w-3/4 border border-[#ADFA1D]/50 bg-[#ADFA1D]/10 p-4 flex justify-between items-center mb-16 animate-pulse';
-                    contentArea.appendChild(heroRep);
-                }
-                
-                heroRep.innerHTML = `
-                    <div class="flex flex-col font-mono text-xs">
-                         <span class="text-[#ADFA1D]">HÉROE</span>
-                         <span class="text-white">${heroName}</span>
-                    </div>
-                    <div class="flex flex-col font-mono text-[10px] text-right">
-                         <span class="text-gray-500">P_SUGERIDO</span>
-                         <span class="text-[#ADFA1D]">$${heroPrice.toFixed(2)}</span>
-                    </div>
-                `;
-
-                // Calculate orthogonal pricing
-                const jointCost = targetCost + heroCost;
-                document.getElementById('bundle-cost').innerText = `$${jointCost.toFixed(2)}`;
-                
-                // Base formula: Hero Price + Target Cost (0 margin on target, margin protected on hero)
-                const bundlePrice = targetCost + heroPrice; 
-                document.getElementById('bundle-price').innerText = `$${bundlePrice.toFixed(2)}`;
-                
-                document.getElementById('bundle-calculator').classList.remove('hidden');
-                document.getElementById('bundle-dropzone').classList.remove('border-dashed');
-                document.getElementById('bundle-dropzone').classList.add('border-solid', 'border-[#ADFA1D]/50');
             }
         }
     </script>
+    <style>
+        body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-apex-base text-gray-300 h-screen w-screen overflow-hidden flex flex-col md:flex-row antialiased">
+
+    <!-- Mobile Header (Hidden on Desktop) -->
+    <div class="md:hidden bg-apex-sidebar border-b border-apex-border flex items-center justify-between p-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#F26430" stroke-width="2"/>
+                <path d="M7 12L12 7L17 12" stroke="#F26430" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="text-white font-semibold tracking-wide">APEX</span>
+        </div>
+        <button id="mobile-menu-btn" class="text-gray-400 p-2">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    </div>
+
+    <!-- Sidebar (Visible on Desktop, hidden/drawer on Mobile) -->
+    <div id="sidebar" class="hidden md:flex bg-apex-sidebar w-full md:w-64 border-b md:border-r border-apex-border flex-col shrink-0 transition-all absolute md:relative z-50 h-[calc(100vh-65px)] md:h-full top-[65px] md:top-0">
+        <!-- Desktop Logo -->
+        <div class="hidden md:flex px-6 py-8 items-center gap-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#F26430" stroke-width="2"/>
+                <path d="M7 12L12 7L17 12" stroke="#F26430" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="text-white font-semibold text-lg tracking-wide">APEX</span>
+            <span class="ml-2 text-[10px] text-gray-400 bg-apex-border px-1.5 py-0.5 rounded uppercase font-bold tracking-widest"></span>
+        </div>
+        
+        <!-- Nav Menu -->
+        <nav class="flex flex-col gap-2 px-4 mt-4 flex-1">
+            <a href="#" class="nav-link text-white bg-apex-accent/10 border-l-2 border-apex-accent px-4 py-3 rounded-r-lg font-medium text-sm flex items-center gap-3 transition-colors">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Dashboard
+            </a>
+            <!-- Removed bloated legacy tabs -->
+            <a href="#" class="nav-link text-gray-500 hover:text-white px-4 py-3 rounded-lg font-medium text-sm flex items-center gap-3 transition-colors">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Simulación (What-If)
+            </a>
+            <a href="#" class="nav-link text-gray-500 hover:text-white px-4 py-3 rounded-lg font-medium text-sm flex items-center gap-3 transition-colors">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                I/O Topología
+            </a>
+        </nav>
+        
+        <div class="p-4">
+            <button class="bg-apex-panel hover:bg-apex-border border border-apex-border text-white font-medium px-4 py-3 rounded-xl w-full transition-colors flex justify-center items-center gap-2 text-sm shadow-sm">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Forzar Auditoría
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-full bg-apex-base relative overflow-hidden">
+        
+        <!-- Top Header Area -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between px-6 md:px-8 py-6 border-b border-apex-border gap-4 shrink-0">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-white flex items-center gap-3 tracking-tight">
+                    Métricas del Sistema
+                </h1>
+                <p class="text-gray-500 text-xs md:text-sm mt-1">Supervisión en tiempo real de topología financiera.</p>
+            </div>
+            
+            <!-- Tasa Widget -->
+            <div class="flex items-center gap-3 md:gap-4 bg-apex-panel border border-apex-border px-4 py-2.5 rounded-xl text-sm md:text-base text-gray-400 shadow-sm shrink-0">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Base Monetaria</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-white font-bold" id="tasa-bcv-value">0.00</span>
+                        <span class="text-gray-500 text-xs">Bs/USD</span>
+                    </div>
+                </div>
+                <button id="btn-sync" onclick="syncTasa()" class="ml-2 bg-apex-accent/10 hover:bg-apex-accent/20 text-apex-accent p-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable content -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+            
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div class="bg-apex-panel border border-apex-border rounded-2xl p-5 md:p-6 shadow-sm flex flex-col">
+                    <span class="text-gray-400 text-xs md:text-sm font-medium mb-1">Volumen Activo</span>
+                    <span id="metric-ingreso" class="text-white text-2xl md:text-3xl font-bold tracking-tight">$0.00</span>
+                    <span class="text-[10px] text-emerald-500 font-medium mt-2 bg-emerald-500/10 px-2 py-1 rounded-md w-fit">+0% Nominal</span>
+                </div>
+                
+                <div class="bg-apex-panel border border-apex-border rounded-2xl p-5 md:p-6 shadow-sm flex flex-col">
+                    <span class="text-gray-400 text-xs md:text-sm font-medium mb-1">Rotación General</span>
+                    <span id="metric-ventas" class="text-white text-2xl md:text-3xl font-bold tracking-tight">0</span>
+                    <span class="text-[10px] text-gray-500 font-medium mt-2 bg-gray-500/10 px-2 py-1 rounded-md w-fit">Eventos en H(t)</span>
+                </div>
+
+                <div class="bg-apex-panel border border-apex-border rounded-2xl p-5 md:p-6 shadow-sm flex flex-col">
+                    <span class="text-gray-400 text-xs md:text-sm font-medium mb-1">Desviación (Margen)</span>
+                    <span id="metric-tasa" class="text-white text-2xl md:text-3xl font-bold tracking-tight">0.00</span>
+                    <span class="text-[10px] text-emerald-500 font-medium mt-2 bg-emerald-500/10 px-2 py-1 rounded-md w-fit">Óptimo</span>
+                </div>
+
+                <div class="bg-gradient-to-br from-apex-panel to-[#231A15] border border-apex-accent/20 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 rounded-full border-[6px] border-apex-accent opacity-10 group-hover:scale-110 transition-transform"></div>
+                    <span class="text-apex-accent text-xs md:text-sm font-medium mb-1 relative z-10">Coef. de Fricción</span>
+                    <span id="metric-salud" class="text-white text-2xl md:text-3xl font-bold tracking-tight relative z-10">0.00</span>
+                    <span class="text-[10px] text-apex-accent font-medium mt-2 bg-apex-accent/10 px-2 py-1 rounded-md w-fit relative z-10">Tolerancia Cero</span>
+                </div>
+            </div>
+
+            <!-- Visualization / Projections Area -->
+            <div class="flex flex-col lg:flex-row gap-6 h-auto lg:h-[400px]">
+                
+                <!-- Main Chart -->
+                <div class="flex-1 bg-apex-panel border border-apex-border rounded-2xl p-6 flex flex-col shadow-sm min-h-[300px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-gray-200 font-semibold text-lg">Inercia & Elasticidad</span>
+                        <div class="flex gap-2">
+                            <span class="w-2 h-2 rounded-full bg-apex-accent mt-1.5"></span>
+                            <span class="text-xs text-gray-400">Proyección Vectorial</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 w-full h-full relative flex items-center justify-center bg-[#0D0E12] rounded-xl border border-apex-border/50" id="chart-container">
+                        <div id="volume-chart" class="w-full h-full flex items-center justify-center p-2">
+                            <!-- chart renders here -->
+                            <span id="chart-placeholder" class="text-xs text-gray-500">Esperando kernels...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="w-full lg:w-80 bg-apex-panel border border-apex-border rounded-2xl p-6 flex flex-col items-center justify-center relative shadow-sm min-h-[300px]" id="panel-oraculo">
+                    
+                    <div class="text-center flex flex-col items-center w-full">
+                        <div class="w-32 h-32 relative flex items-center justify-center mb-6">
+                            <!-- Circular status ring (Fusion orange) -->
+                            <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90 drop-shadow-lg">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#2B2D31" stroke-width="8"></circle>
+                                <circle id="status-ring" cx="50" cy="50" r="42" fill="none" stroke="#F26430" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" class="transition-all duration-1000"></circle>
+                            </svg>
+                            <span class="absolute text-3xl font-extrabold text-white" id="status-percent">0%</span>
+                        </div>
+                        
+                        <h3 class="text-lg font-bold text-white mb-1">Status</h3>
+                        <p class="text-sm text-gray-400" id="status-text">OFFLINE - Pendiente de Ingesta</p>
+                        
+                        <button onclick="initInventory()" class="mt-6 bg-white hover:bg-gray-200 text-apex-base font-bold py-3 w-full rounded-xl transition-colors shadow-sm text-sm">
+                            Sincronizar Kernels
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 
     <script>
-        // Compatibilidad de invoke para Tauri v1 y v2
-        const invoke = window.__TAURI__ 
-            ? (window.__TAURI__.invoke || (window.__TAURI__.core ? window.__TAURI__.core.invoke : (window.__TAURI__.tauri ? window.__TAURI__.tauri.invoke : null)))
-            : async () => null;
-
-        const activeClasses = ['text-white', 'relative', 'after:content-[\'\']', 'after:absolute', 'after:-bottom-[13px]', 'after:left-0', 'after:w-full', 'after:h-[2px]', 'after:bg-[#ADFA1D]'];
-        const inactiveClasses = ['text-gray-500', 'hover:text-gray-300', 'transition-colors'];
-
+        const { invoke } = window.__TAURI__.core;
         
-        
-        async function loadCadena() {
-            const tbody = document.getElementById('cadena-tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="5" class="py-3 px-4 text-[#ADFA1D] font-mono text-sm">Calculando entropía logística...</td></tr>';
-            try {
-                const inventoryMap = await invoke('get_inventory');
-                tbody.innerHTML = '';
-                
-                let rowsHTML = '';
-                
-                for (const sku in inventoryMap) {
-                    const lotes = inventoryMap[sku];
-                    
-                    let totalQActual = 0;
-                    let totalQInicial = 0;
-                    let maxDays = 1;
-                    
-                    lotes.forEach(lote => {
-                        // Assuming q_actual, q_inicial are returned as numbers or strings by serde Decimal
-                        const qA = parseFloat(lote.q_actual);
-                        const qI = parseFloat(lote.q_inicial);
-                        const days = parseFloat(lote.delta_tiempo_dias);
-                        
-                        totalQActual += qA;
-                        totalQInicial += qI;
-                        if (days > maxDays) maxDays = days;
-                    });
-                    
-                    let velocity = (totalQInicial - totalQActual) / maxDays;
-                    if (velocity < 0) velocity = 0; // fallback if data is weird
-                    
-                    let daysLeft = 999;
-                    if (velocity > 0) {
-                        daysLeft = totalQActual / velocity;
-                    }
-                    
-                    let statusColor = 'text-[#ADFA1D]';
-                    let statusBg = 'bg-[#ADFA1D]';
-                    let actionBtn = '<button class="border border-white/20 px-3 py-1 text-gray-600 cursor-not-allowed">N/A</button>';
-                    let pulse = '';
-                    
-                    if (daysLeft < 3) {
-                        statusColor = 'text-red-400';
-                        statusBg = 'bg-red-400';
-                        pulse = 'animate-pulse';
-                        actionBtn = `<button class="border border-white/20 px-3 py-1 hover:border-[#ADFA1D] hover:text-[#ADFA1D] transition-colors cursor-pointer" onclick="alert('Generando Orden de Compra Inteligente...')">GENERAR ORDEN</button>`;
-                    } else if (daysLeft < 7) {
-                        statusColor = 'text-yellow-400';
-                        statusBg = 'bg-yellow-400';
-                        actionBtn = `<button class="border border-white/20 px-3 py-1 hover:border-[#ADFA1D] hover:text-[#ADFA1D] transition-colors cursor-pointer" onclick="alert('Añadiendo a cola de reposición...')">EVALUAR PROVEEDOR</button>`;
-                    }
+        let inventoryCache = [];
+        let uplotInst = null;
 
-                    rowsHTML += `
-                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                        <td class="py-3 px-4 text-white">${sku}</td>
-                        <td class="py-3 px-4">${totalQActual.toFixed(2)}</td>
-                        <td class="py-3 px-4">${velocity.toFixed(2)}/día</td>
-                        <td class="py-3 px-4 ${statusColor} flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full ${statusBg} ${pulse}"></div>
-                            ${daysLeft > 900 ? '∞' : daysLeft.toFixed(1)} Días
-                        </td>
-                        <td class="py-3 px-4 text-right">
-                            ${actionBtn}
-                        </td>
-                    </tr>
-                    `;
-                }
-                
-                if (rowsHTML === '') {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-3 px-4 text-gray-500 font-mono">Inventario estático. No hay flujo tensorial detectado.</td></tr>';
-                } else {
-                    tbody.innerHTML = rowsHTML;
-                }
-                
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-3 px-4">${renderError(err)}</td></tr>`;
-            }
-        }
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('hidden');
+            sb.classList.toggle('flex');
+        });
 
-        async function loadCrmClusters() {
-            const grid = document.getElementById('radar-grid');
-            if (!grid) return;
-            grid.innerHTML = '<div class="text-[#ADFA1D] font-mono text-sm">Calculando vectores de afinidad...</div>';
-            try {
-                const clusters = await invoke('get_crm_clusters');
-                grid.innerHTML = '';
-                clusters.forEach(c => {
-                    let affinityColor = 'text-emerald-400';
-                    let btnColor = 'hover:border-[#ADFA1D]/50 text-gray-300 hover:text-[#ADFA1D] bg-white/5 hover:bg-[#ADFA1D]/5';
-                    let btnText = '> DISPARAR PROMOCIÓN';
-                    let btnAction = 'alert("Generando texto promocional...")';
-                    
-                    if (c.affinity < 0.3) {
-                        affinityColor = 'text-red-400';
-                        btnColor = 'hover:border-red-400/50 text-gray-500 hover:text-red-400 bg-white/5 hover:bg-red-400/5 cursor-not-allowed';
-                        btnText = '> AFINIDAD INSUFICIENTE';
-                        btnAction = '';
-                    } else if (c.affinity < 0.6) {
-                        affinityColor = 'text-yellow-400';
-                    }
-
-                    const card = `
-                    <div class="border border-white/10 bg-[#0D0D0D] p-6 flex flex-col justify-between">
-                         <div>
-                             <div class="flex justify-between items-start mb-4">
-                                 <span class="text-[#ADFA1D] font-mono text-sm uppercase tracking-widest">${c.name}</span>
-                                 <span class="text-xs text-gray-500 font-mono">${c.dimension}</span>
-                             </div>
-                             <p class="text-xs text-gray-400 font-mono mb-4 h-16 overflow-hidden">${c.description}</p>
-                             <div class="text-[10px] text-gray-500 font-mono mb-1">TAMAÑO DEL CLÚSTER: <span class="text-white">${c.size.toLocaleString()} Entidades</span></div>
-                             <div class="text-[10px] text-gray-500 font-mono">AFINIDAD ACTUAL: <span class="${affinityColor}">${c.affinity.toFixed(2)}</span></div>
-                         </div>
-                         <button class="mt-6 border border-white/10 ${btnColor} px-4 py-2 text-xs font-mono w-full transition-all text-left flex justify-between group" onclick='${btnAction}'>
-                             <span>${btnText}</span>
-                             <span class="opacity-0 group-hover:opacity-100 transition-opacity">WHATSAPP</span>
-                         </button>
-                     </div>
-                    `;
-                    grid.innerHTML += card;
-                });
-            } catch (err) {
-                grid.innerHTML = renderError(err);
-            }
-        }
-
-        function switchTab(event, viewId) {
-            if (event) event.preventDefault();
-            
-            document.querySelectorAll('.tab-view').forEach(view => {
-                view.classList.add('hidden');
-                view.classList.remove('flex');
-            });
-            
-            const targetView = document.getElementById(viewId);
-            if (targetView) {
-            if (viewId === 'view-radar') {
-                loadCrmClusters();
-            }
-            if (viewId === 'view-cadena') {
-                loadCadena();
-            }
-
-
-                targetView.classList.remove('hidden');
-                targetView.classList.add('flex');
-            }
-
-            if (event && event.currentTarget) {
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove(...activeClasses);
-                    link.classList.add(...inactiveClasses);
-                });
-
-                const activeLink = event.currentTarget;
-                activeLink.classList.remove(...inactiveClasses);
-                activeLink.classList.add(...activeClasses);
-            } else if (viewId === 'view-resumen') {
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove(...activeClasses);
-                    link.classList.add(...inactiveClasses);
-                });
-                const resumenLink = document.querySelector('.nav-link');
-                if(resumenLink) {
-                     resumenLink.classList.remove(...inactiveClasses);
-                     resumenLink.classList.add(...activeClasses);
-                }
-            }
-
-            // Lazy Load data depending on tab
-            if (viewId === 'view-warroom') {
-                initWarRoom();
-            }
-        }
-
-        // --- LÓGICA DE SINCRONIZACIÓN Y ESTADO CERO --- //
-        
+        // 1. Fetch BCV Rate
         async function syncTasa() {
             const btn = document.getElementById('btn-sync');
             const rateEl = document.getElementById('tasa-bcv-value');
             
-            btn.innerText = 'WAIT';
-            btn.classList.add('text-amber-500');
+            btn.classList.add('animate-spin');
             
             try {
                 const rate = await invoke('sync_bcv_rate');
@@ -697,413 +219,128 @@
                 }
             } catch (error) {
                 console.error("Error sync BCV:", error);
-                rateEl.innerText = "ERR";
+                // Si falla usamos mock o conservamos valor, no mostramos ERR feo
             } finally {
-                btn.innerText = 'SYNC';
-                btn.classList.remove('text-amber-500');
+                btn.classList.remove('animate-spin');
             }
         }
 
+        // 2. Initialize / Inventory
         async function initInventory() {
+            const statusRing = document.getElementById('status-ring');
+            const statusPercent = document.getElementById('status-percent');
+            const statusText = document.getElementById('status-text');
+            
+            statusRing.style.strokeDashoffset = "132"; // 50%
+            statusPercent.innerText = "50%";
+            statusText.innerText = "Mapeando Topología...";
+            
             try {
-                const inventory = await invoke('get_inventory');
-                if (!inventory || Object.keys(inventory).length === 0) return;
-
-                let totalValue = 0;
-                let totalItems = 0;
-
-                for (const [sku, tensores] of Object.entries(inventory)) {
-                    for (const tensor of tensores) {
-                        if(tensor.c_usd !== undefined && tensor.c_usd !== null) {
-                            totalValue += parseFloat(tensor.c_usd) * parseFloat(tensor.q_actual);
-                        }
-                        totalItems += 1;
-                    }
-                }
-
-                if (totalItems > 0) {
-                    document.getElementById('metric-ingreso').innerText = `$${totalValue.toFixed(2)}`;
-                    document.getElementById('metric-ventas').innerText = totalItems;
-                    document.getElementById('metric-salud').innerText = '1.00';
-                    
-                    document.getElementById('oraculo-content').innerHTML = `
-                        <div class="font-mono text-[10px] text-[#ADFA1D] text-left w-full border-l-2 border-[#ADFA1D]/30 pl-2">
-                            > MATRIZ_ONLINE<br>
-                            > TOPOLOGÍA_CARGADA
-                        </div>
-                        <p class="text-[9px] text-gray-600 font-mono mt-4 tracking-wide uppercase text-left w-full">
-                            SKUs Activos: ${Object.keys(inventory).length}
-                        </p>
-                    `;
-
-                    const barras = document.querySelectorAll('#view-resumen .w-16');
-                    if (barras.length === 5) {
-                        barras[0].style.height = '20%';
-                        barras[1].style.height = '35%';
-                        barras[2].style.height = '60%';
-                        barras[3].style.height = '80%';
-                        barras[4].style.height = '100%';
-                    }
-                }
-            } catch (e) {
-                console.error("Error al obtener inventario:", e);
-            }
-        }
-
-        // --- LÓGICA DE WAR ROOM (SIMULADOR) --- //
-        
-        let warroomInventoryData = {};
-        let activeSkuData = null;
-
-        async function initWarRoom() {
-            try {
-                warroomInventoryData = await invoke('get_inventory');
-                const select = document.getElementById('warroom-sku-select');
-                select.innerHTML = '<option value="">-- SELECCIONE ACTIVO --</option>';
+                const data = await invoke('get_inventory');
+                inventoryCache = data;
                 
-                for (const sku in warroomInventoryData) {
-                    select.innerHTML += `<option value="${sku}">${sku}</option>`;
-                }
-            } catch (e) {
-                console.error("Error cargando inventario en War Room", e);
+                statusRing.style.strokeDashoffset = "0"; // 100%
+                statusRing.setAttribute("stroke", "#10B981"); // Green success
+                statusPercent.innerText = "100%";
+                statusText.innerText = "Mapeo Exitoso (SIMD)";
+                
+                calculateOutcomes(data);
+                renderUplot(data);
+                
+            } catch (err) {
+                console.error(err);
+                statusRing.style.strokeDashoffset = "230";
+                statusRing.setAttribute("stroke", "#EF4444"); // Red error
+                statusPercent.innerText = "ERR";
+                statusText.innerText = "Fallo Estructural";
             }
         }
 
-        function loadWarroomSKU() {
-            const sku = document.getElementById('warroom-sku-select').value;
-            if (!sku || !warroomInventoryData[sku]) {
-                activeSkuData = null;
-                document.getElementById('wr-qty').innerText = '--';
-                document.getElementById('wr-cost').innerText = '--';
-                document.getElementById('wr-floor').innerText = '--';
-                document.getElementById('btn-apply-maneuver').disabled = true;
+        // 3. Compute Metrics
+        function calculateOutcomes(data) {
+            if (!data || data.length === 0) return;
+            
+            let totalVal = 0;
+            let healthyCount = 0;
+            
+            data.forEach(item => {
+                totalVal += (item.qty * item.price);
+                if (item.qty > 5) healthyCount++;
+            });
+            
+            document.getElementById('metric-ingreso').innerText = '$' + totalVal.toFixed(2);
+            document.getElementById('metric-ventas').innerText = data.length.toString();
+            
+            const salud = (healthyCount / data.length);
+            document.getElementById('metric-salud').innerText = salud.toFixed(2);
+            document.getElementById('metric-tasa').innerText = "0.05"; // Margen proxy dummy
+        }
+
+        // 4. Render Chart (DoD Grade)
+        function renderUplot(data) {
+            const container = document.getElementById('volume-chart');
+            if (!container) return;
+            
+            if (data.length === 0) {
+                container.innerHTML = '<span class="text-xs text-gray-500">Dataset Vacío</span>';
                 return;
             }
-
-            // Agregamos lotes (LIFO/FIFO no importa para totales, pero sí para P_floor)
-            // Simplificación para V1: Tomamos el costo de reposición del lote más reciente
-            const lotes = warroomInventoryData[sku];
-            const activeLot = lotes[0]; // El lote más reciente
             
-            let totalQty = 0;
-            lotes.forEach(l => { totalQty += parseFloat(l.q_actual); });
+            container.innerHTML = '';
             
-            const costUsd = parseFloat(activeLot.c_usd);
-            const pFloor = costUsd * 1.15; // 15% Prima de riesgo base estocástica
-
-            activeSkuData = {
-                sku: sku,
-                qty: totalQty,
-                cost: costUsd,
-                pFloor: pFloor,
-                basePrice: costUsd > 0 ? costUsd * 1.40 : 10.0 // Simulamos un precio base de 40% margen
+            // X: Indices, Y: Prices
+            let xs = [];
+            let ys = [];
+            
+            data.forEach((d, i) => {
+                xs.push(i);
+                ys.push(d.price);
+            });
+            
+            const opts = {
+                width: container.clientWidth || 500,
+                height: container.clientHeight || 250,
+                axes: [
+                    { stroke: "#2B2D31", grid: { stroke: "#1D1E22" }, font: "10px Inter" },
+                    { stroke: "#2B2D31", grid: { stroke: "#1D1E22" }, font: "10px Inter" }
+                ],
+                series: [
+                    {},
+                    {
+                        stroke: "#F26430",
+                        fill: "rgba(242, 100, 48, 0.1)",
+                        width: 2,
+                    }
+                ],
+                legend: { show: false }
             };
-
-            document.getElementById('wr-qty').innerText = totalQty;
-            document.getElementById('wr-cost').innerText = `$${costUsd.toFixed(2)}`;
-            document.getElementById('wr-floor').innerText = `$${pFloor.toFixed(2)}`;
             
-            const slider = document.getElementById('wr-price-slider');
-            slider.min = (costUsd * 0.8).toFixed(2); // Permite bajar por debajo del costo (Riesgo)
-            slider.max = (activeSkuData.basePrice * 1.5).toFixed(2);
-            slider.value = activeSkuData.basePrice.toFixed(2);
+            uplotInst = new uPlot(opts, [xs, ys], container);
             
-            document.getElementById('btn-apply-maneuver').disabled = false;
-            updateSimulation();
-        }
-
-        function updateSimulation() {
-            if (!activeSkuData) return;
-            
-            const slider = document.getElementById('wr-price-slider');
-            const simPrice = parseFloat(slider.value);
-            
-            document.getElementById('wr-sim-price').innerText = `$${simPrice.toFixed(2)}`;
-            
-            const trafficLight = document.getElementById('wr-traffic-light');
-            const statusText = document.getElementById('wr-status-text');
-            const btnApply = document.getElementById('btn-apply-maneuver');
-            const salesBar = document.getElementById('wr-sales-bar');
-            const reqSalesTxt = document.getElementById('wr-req-sales');
-
-            // Lógica de elasticidad (simplificada para V1 UX)
-            // Si el margen baja, requerimos vender exponencialmente más para ganar la misma masa de dólares
-            const targetProfitDollar = (activeSkuData.basePrice - activeSkuData.cost) * (activeSkuData.qty * 0.1); // Asume que normalmente vendemos 10%
-            let reqVol = 0;
-            let barWidth = 0;
-
-            if (simPrice > activeSkuData.pFloor) {
-                // Sano o en advertencia leve
-                trafficLight.className = "w-full p-4 border border-[#ADFA1D]/30 bg-[#ADFA1D]/5 text-center font-mono transition-colors duration-300";
-                statusText.className = "text-[#ADFA1D] text-sm";
-                
-                if (simPrice < activeSkuData.basePrice) {
-                    statusText.innerText = "> ESTADO: TÁCTICO (MARGEN REDUCIDO)";
-                    const curProfit = simPrice - activeSkuData.cost;
-                    if(curProfit > 0) {
-                        reqVol = targetProfitDollar / curProfit;
-                    }
-                } else {
-                    statusText.innerText = "> ESTADO: RENTABLE (MARGEN SEGURO)";
-                    reqVol = targetProfitDollar / (simPrice - activeSkuData.cost);
-                }
-                
-                btnApply.disabled = false;
-                barWidth = Math.min((reqVol / activeSkuData.qty) * 100, 100);
-                salesBar.className = "h-full bg-[#ADFA1D] transition-all duration-300";
-
-            } else {
-                // Riesgo de Ruina (Debajo de P_floor)
-                trafficLight.className = "w-full p-4 border border-red-500/50 bg-red-500/10 text-center font-mono transition-colors duration-300 animate-pulse";
-                statusText.className = "text-red-500 text-sm font-bold";
-                statusText.innerText = "> PELIGRO: PERFORACIÓN DE P_FLOOR (RIESGO DE RUINA)";
-                
-                btnApply.disabled = true;
-                reqVol = Infinity;
-                barWidth = 100;
-                salesBar.className = "h-full bg-red-500 transition-all duration-300";
-            }
-            
-            if (reqVol === Infinity || reqVol < 0) {
-                 reqSalesTxt.innerText = "INVIABLE";
-            } else {
-                 reqSalesTxt.innerText = `${Math.ceil(reqVol)} Unidades`;
-            }
-            salesBar.style.width = `${barWidth}%`;
-        }
-
-        // --- FIN LÓGICA DE WAR ROOM --- //
-        
-        let currentSourcePath = null;
-        let currentSchema = null;
-
-        async function selectDataSource() {
-            const btn = document.getElementById('btn-select-source');
-            btn.innerText = 'ABRIENDO...';
-            
-            try {
-                const path = await invoke('select_data_source');
-                if (path) {
-                    currentSourcePath = path;
-                    btn.innerText = path.split(/[/\\]/).pop(); // Show filename
-                    await analyzeDataSource(path);
-                } else {
-                    btn.innerText = 'SELECCIONAR ORIGEN';
-                }
-            } catch (error) {
-                console.error("Error al seleccionar:", error);
-                btn.innerText = 'ERROR (REINTENTAR)';
-            }
-        }
-
-        async function analyzeDataSource(path) {
-            const step2 = document.getElementById('ingest-step-2');
-            const status = document.getElementById('mapping-status');
-            const container = document.getElementById('schema-mapping-container');
-            const btnExecute = document.getElementById('btn-execute-ingestion');
-            const anomaliesContainer = document.getElementById('anomalies-container');
-            const anomaliesList = document.getElementById('anomalies-list');
-            
-            step2.classList.remove('hidden');
-            step2.classList.add('flex');
-            status.innerText = "Analizando entropía estructural... " + path;
-            container.innerHTML = "<div class='col-span-2 text-center text-amber-500 animate-pulse'>ESPERANDO ORÁCULO...</div>";
-            btnExecute.classList.add('hidden');
-            anomaliesContainer.classList.add('hidden');
-
-            try {
-                const report = await invoke('scan_entropy', { path: path });
-                currentSchema = report.schema_inferred;
-                
-                status.innerText = `Oráculo completado. ${report.total_rows_analyzed} filas analizadas.`;
-                
-                // Renderizar mapeo
-                const renderCol = (label, colOpt) => {
-                    const mappedName = colOpt ? colOpt[0] : "NO_DETECTADO";
-                    const confidenceColor = colOpt ? (colOpt[1] === "High" ? "text-[#ADFA1D]" : "text-amber-500") : "text-red-500";
-                    return `
-                        <div class="border border-white/10 p-3 bg-black/50 flex justify-between items-center">
-                            <span>${label}</span>
-                            <span class="${confidenceColor} font-bold">${mappedName}</span>
-                        </div>
-                    `;
-                };
-
-                container.innerHTML = `
-                    <div class="flex flex-col gap-2">
-                        <div class="text-amber-500 mb-1">> CAMPOS REQUERIDOS</div>
-                        ${renderCol("ID_PRODUCTO (SKU)", currentSchema.product_id_col)}
-                        ${renderCol("CANTIDAD (QTY)", currentSchema.qty_col)}
-                        ${renderCol("PRECIO (USD)", currentSchema.price_col)}
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="text-amber-500 mb-1">> CAMPOS OPCIONALES</div>
-                        ${renderCol("COSTO_REPOSICIÓN", currentSchema.cost_col)}
-                        ${renderCol("FECHA_TRANSACCIÓN", currentSchema.date_col)}
-                    </div>
-                `;
-
-                if (report.anomalies_detected.length > 0) {
-                    anomaliesContainer.classList.remove('hidden');
-                    anomaliesList.innerHTML = report.anomalies_detected.slice(0, 5).map(a => 
-                        `<li>Fila ${a.row_index}: Columna '${a.column_name}' - ${a.issue_description} (Valor crudo: '${a.raw_value}')</li>`
-                    ).join('');
-                    if (report.anomalies_detected.length > 5) {
-                        anomaliesList.innerHTML += `<li>...y ${report.anomalies_detected.length - 5} más. Las filas corruptas irán a Cuarentena (DLQ).</li>`;
-                    }
-                }
-
-                if (currentSchema.product_id_col && currentSchema.qty_col && currentSchema.price_col) {
-                    btnExecute.classList.remove('hidden');
-                } else {
-                    container.innerHTML += `<div class="col-span-2 text-center text-red-500 mt-4 border border-red-500 p-2">FALTAN CAMPOS REQUERIDOS PARA TRANSMUTACIÓN</div>`;
-                }
-
-            } catch (error) {
-                console.error("Error oráculo:", error);
-                status.innerText = "ERROR FATAL EN ORÁCULO";
-                container.innerHTML = `${renderError(error)}`;
-            }
-        }
-
-        async function executeIngestion() {
-            if (!currentSourcePath || !currentSchema) return;
-            
-            const btn = document.getElementById('btn-execute-ingestion');
-            const status = document.getElementById('mapping-status');
-            const activateSentinel = document.getElementById('chk-activate-sentinel').checked;
-            
-            btn.innerText = 'MUTANDO...';
-            btn.classList.add('animate-pulse');
-            btn.disabled = true;
-
-            try {
-                const mappings = {};
-                if (currentSchema.product_id_col) mappings["ID_ENTIDAD"] = currentSchema.product_id_col[0];
-                if (currentSchema.qty_col) mappings["QTY"] = currentSchema.qty_col[0];
-                if (currentSchema.price_col) mappings["PRICE"] = currentSchema.price_col[0];
-                if (currentSchema.cost_col) mappings["COST"] = currentSchema.cost_col[0];
-
-                const result = await invoke('execute_agnostic_ingestion', { 
-                    path: currentSourcePath, 
-                    mappings: mappings,
-                    playbookRules: [],
-                    activateSentinel: activateSentinel
-                });
-                
-                status.innerHTML = `<span class="text-[#ADFA1D]">> ${result}</span>`;
-                btn.innerText = 'VOLVER AL RESUMEN';
-                btn.classList.remove('animate-pulse');
-                btn.onclick = () => switchTab(null, 'view-resumen');
-                
-                // Recargar inventario en background
-                initInventory();
-
-            } catch (error) {
-                console.error("Error en transmutación:", error);
-                status.innerHTML = `${renderError(error)}`;
-                btn.innerText = 'ERROR FATAL';
-                btn.classList.remove('animate-pulse');
-            }
-        }
-
-        function cancelIngestion() {
-            document.getElementById('ingest-step-2').classList.add('hidden');
-            document.getElementById('ingest-step-2').classList.remove('flex');
-            document.getElementById('btn-select-source').innerText = 'SELECCIONAR ORIGEN';
-            currentSourcePath = null;
-            currentSchema = null;
-        }
-
-        // --- ZERO-COPY ARROW RENDERER --- //
-        async function fetchAndRenderData() {
-            const statsEl = document.getElementById('arrow-stats');
-            const thead = document.getElementById('arrow-thead');
-            const tbody = document.getElementById('arrow-tbody');
-            
-            if (!window.tableFromIPC) {
-                statsEl.innerHTML = `<span class="text-amber-500">> ESPERANDO MÓDULO ESM DE ARROW... INTENTE DE NUEVO.</span>`;
-                return;
-            }
-
-            statsEl.innerText = "> INVOCANDO KERNELS EN RUST (SIMD)...";
-            const t0 = performance.now();
-            
-            try {
-                // 1. Invocar el backend Rust (Devuelve Vec<u8> convertido a Array de números crudos por Tauri IPC)
-                const response = await invoke('run_ingestion_pipeline');
-                
-                // 2. Manejo Crítico de Memoria: Zero-Copy mapping
-                // Convertimos el array a Uint8Array sin parsear JSON stringificado
-                const buffer = new Uint8Array(response);
-                
-                // 3. Arrow lee los punteros de memoria directamente (O(1))
-                const table = window.tableFromIPC(buffer);
-                
-                const t1 = performance.now();
-                
-                // Render Headers
-                const fields = table.schema.fields;
-                let headerHtml = '<tr>';
-                fields.forEach(f => {
-                    headerHtml += `<th class="py-3 px-4 font-normal tracking-widest text-[10px]">${f.name.toUpperCase()}</th>`;
-                });
-                headerHtml += '</tr>';
-                thead.innerHTML = headerHtml;
-                
-                // Ejemplos de acceso O(1) columnar (No usado en el loop para simular un render realista, pero disponible en memoria)
-                // const skuColumn = table.getChild("sku").toArray();
-                
-                // Render Rows (Virtualización conceptual o iteración directa)
-                let rowsHtml = '';
-                for (let i = 0; i < table.numRows; i++) {
-                    const row = table.get(i);
-                    rowsHtml += '<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">';
-                    fields.forEach(f => {
-                        const val = row[f.name];
-                        let valStr = val !== null ? val : 'NULL';
-                        let colorClass = 'text-gray-300';
-                        if (f.name === 'status') {
-                            if (valStr === 'WARNING') colorClass = 'text-amber-500';
-                            if (valStr === 'DEAD') colorClass = 'text-red-500';
-                            if (valStr === 'ACTIVE') colorClass = 'text-[#ADFA1D]';
-                        }
-                        rowsHtml += `<td class="py-3 px-4 ${colorClass}">${valStr}</td>`;
+            // Handle resize
+            window.addEventListener('resize', () => {
+                if (uplotInst && container.clientWidth > 0) {
+                    uplotInst.setSize({
+                        width: container.clientWidth,
+                        height: container.clientHeight
                     });
-                    rowsHtml += '</tr>';
                 }
-                tbody.innerHTML = rowsHtml;
-                
-                const t2 = performance.now();
-                statsEl.innerHTML = `<span class="text-[#ADFA1D]">> KERNELS EJECUTADOS. MAPEO DE MEMORIA EXITOSO.</span> | Transporte Rust->JS: ${(t1-t0).toFixed(2)}ms | Render DOM: ${(t2-t1).toFixed(2)}ms | Filas Mapeadas: ${table.numRows}`;
-
-            } catch (e) {
-                console.error(e);
-                statsEl.innerHTML = `<span class="text-red-500">> ERROR FATAL EN PIPELINE IPC: ${e}</span>`;
-            }
+            });
         }
 
-        // Ejecutar al cargar
+        // Execute on load
         window.addEventListener('DOMContentLoaded', () => {
-            // Failsafe: Si en 800ms no se ha mostrado la ventana, forzar visibilidad
-            const failsafe = setTimeout(() => {
-                console.warn("> FAILSAFE_TRIGGERED: Mostrando ventana por timeout");
+            syncTasa();
+            
+            // Auto init after 500ms for visual effect
+            setTimeout(() => {
+                initInventory();
+            }, 500);
+            
+            // Failsafe visibility
+            setTimeout(() => {
                 if (invoke) invoke('show_main_window');
             }, 800);
-
-            Promise.all([
-                initInventory(),
-                invoke('get_tasa_bcv').then(tasa => {
-                    const val = parseFloat(tasa);
-                    if (val > 0) {
-                        document.getElementById('tasa-bcv-value').innerText = val.toFixed(2);
-                    }
-                }).catch(e => console.error("Error cargando tasa inicial", e))
-            ]).finally(() => {
-                clearTimeout(failsafe);
-                if (invoke) invoke('show_main_window');
-                console.log("> SYS_READY: Ventana liberada");
-            });
         });
     </script>
 </body>

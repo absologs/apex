@@ -1,69 +1,69 @@
-# Fundamentos Matemáticos de APEX
+# Fundamentos Matemáticos de APEX (DoD-Grade)
 
-Este documento compila de forma exhaustiva los modelos matemáticos, ecuaciones y algoritmos que fundamentan el motor de inferencia económica y optimización de precios (Dynamic Pricing) del sistema APEX.
-
----
-
-## 1. El Tensor de Lote Discreto ($T_{i,L}$)
-
-El estado de cada activo (lote de inventario) no se evalúa como un escalar contable estático, sino como un tensor de esfuerzo-energía financiera $T_{\mu\nu}$, sujeto a la curvatura dictada por el tensor métrico del mercado (como la inflación y la volatilidad cambiaria).
-
-Para un producto (SKU) $i$ en un lote $L$, el estado de densidad y flujo de capital se define matricialmente como:
-
-$$
-T_{i,L} = \begin{bmatrix} 
-Q_{inicial} & Q_{actual} \\ 
-FX_{origen} & FX_{actual} \\ 
-C_{USD} & C_{BS} \\ 
-\Delta t_{estancia} & \epsilon_{entropia} 
-\end{bmatrix}
-$$
-
-**Componentes del Tensor:**
-- $Q_{inicial}$: Cantidad de unidades originalmente ingresadas.
-- $Q_{actual}$: Cantidad remanente real al instante de evaluación.
-- $FX_{origen}$: Tipo de cambio al momento de la compra/ingreso.
-- $FX_{actual}$: Tipo de cambio estocástico al momento de la valuación.
-- $C_{USD}$ / $C_{BS}$: Costo de adquisición indexado en moneda dura (USD) y moneda local fiduciaria (Bs).
-- $\Delta t_{estancia}$: Tiempo de permanencia o antigüedad del lote (afecta el factor de descuento temporal y costo de oportunidad).
-- $\epsilon_{entropia}$: Fricción del lote (robos, mermas físicas identificadas empíricamente, errores de conteo). Cualquier perturbación antrópica en un lote altera asimétricamente la presión de liquidez y coeficientes de volatilidad.
+Este documento compila de forma exhaustiva los modelos matemáticos y proyecciones algebraicas que fundamentan el motor de inferencia económica del sistema APEX, alineados estrictamente con su arquitectura de tres nodos planos.
 
 ---
 
-## 2. Problema de Optimización: El Precio de Supervivencia ($P_{floor}$)
+## 1. Topología de Base: Espacio Métrico Vectorial $\mathbb{R}^5$
 
-El límite inferior de precio ("Precio de Supervivencia") no es un margen porcentual fijo ni un _mark-up_ ingenuo. Se define formalmente como la solución a un problema de optimización con restricciones estocásticas y horizonte de tiempo finito e incierto.
-
-El límite inferior absoluto e inquebrantable $P_{floor}^{(i)}$ para el producto $i$ en el instante $t$ se formula como:
+Se abandona la contabilidad escalar aislada. Toda entidad del sistema (como un Producto) se proyecta sobre un espacio métrico $\mathbb{R}^5$, formando un vector canónico $\vec{E}$:
 
 $$
-P_{floor}^{(i)}(t) = \inf \left\{ p \in \mathbb{R}^+ \mid \mathbb{E}^{\mathbb{Q}} \left[ \frac{p \cdot (1 - \mu_i)}{C_{repo}^{(i)}(t + \tau)} \right] \ge 1 + \mathcal{R} \right\}
+\vec{E} = \begin{bmatrix} v_1 \\ v_2 \\ v_3 \\ v_4 \\ v_5 \end{bmatrix} = \begin{bmatrix} Inercia \\ Elasticidad \\ Densidad \\ Fricción \\ Gravedad \end{bmatrix}
 $$
 
-**Desglose de la Inecuación de Valor Esperado:**
-- $\inf \{ \cdot \}$: El ínfimo (valor mínimo) del conjunto de precios posibles $p$ que satisfacen la condición de rentabilidad estocástica.
-- $\mathbb{E}^{\mathbb{Q}}[\cdot]$: El valor esperado bajo la medida de probabilidad neutral al riesgo $\mathbb{Q}$.
-- $\tau$: Tiempo esperado de liquidación del inventario actual, modelado como el inverso estadístico de la velocidad de venta en tiempo real.
-- $C_{repo}^{(i)}(t+\tau)$: El costo de reposición estocástico (no el costo histórico) que regirá en el momento incierto de la recompra del lote en $t+\tau$.
-- $\mu_i$: Coeficiente empírico de fricción antrópica, inferido indirectamente (incluye evasiones, descuadres de caja y merma acumulada).
-- $\mathcal{R}$: Prima de riesgo base u _Hurdle Rate_ mínimo exigido para justificar la operación del negocio ante el costo del capital local.
+Esta topología de cinco dimensiones permite operaciones SIMD nativas al abstraer el comportamiento financiero como desplazamientos en un espacio termodinámico continuo en lugar de simples contadores.
 
 ---
 
-## 3. Topología de Activos: Salud y Divergencia de Liquidez ($H$)
+## 2. Reducción de Costos: Cálculo de Inercia y Ruptura Logística
 
-Apex repudia el ROI (Retorno sobre la Inversión) estático tradicional a favor de un campo vectorial dinámico. Operativamente, mide la divergencia del campo vectorial del capital $\nabla \cdot \vec{J}_c$.
+El vector de inventario entra en estado de singularidad logística si el tiempo de propagación interseca de forma destructiva con la cobertura de inercia térmica (stock).
 
-El indicador de Salud de Liquidez $H_i(t)$ para un producto $i$ dictamina empíricamente si el activo aporta o succiona oxígeno financiero al sistema:
+### Ecuación de Cobertura ($C$)
+La inercia de cobertura en días se modela como el cociente de la masa estática sobre su derivada direccional (demanda):
 
 $$
-H_i(t) = \frac{\partial V_{sales}^{(i)}}{\partial t} \cdot \left( \frac{P_{actual}^{(i)} - C_{repo}^{(i)}}{C_{repo}^{(i)}} \right) \cdot \frac{1}{\pi_{inflacion}}
+C = \frac{S_a}{v_s}
 $$
 
-**Variables Diferenciales:**
-- $\frac{\partial V_{sales}^{(i)}}{\partial t}$: La derivada temporal del flujo o volumen de ventas (la aceleración real de extracción de liquidez del mercado).
-- $\left( \frac{P_{actual}^{(i)} - C_{repo}^{(i)}}{C_{repo}^{(i)}} \right)$: El margen de protección real actual frente al costo de reposición $C_{repo}$ (no frente al costo histórico contable).
-- $\frac{1}{\pi_{inflacion}}$: El vector deflactor o tensor métrico del mercado (volatilidad y devaluación) que penaliza la utilidad diferida.
+Donde:
+- $S_a$: `stock_actual` (Inercia estática física - Nodo de Infraestructura).
+- $v_s$: `velocidad_salida` (Derivada direccional de demanda - Nodo de Producto).
 
-**Acción Algorítmica Determinista (Smart Contract de Negocios):**
-Si el vector $H_i(t) \le 0$, indica matemáticamente que la derivada del flujo de caja real se ha vuelto negativa; el activo cruza la métrica de frontera convirtiéndose en un sumidero de liquidez. Entonces se activa automáticamente la recomendación de liquidación o promoción.
+### Condición Crítica de Ruptura (Alerta Logística)
+El sistema genera un evento estocástico negativo de ruptura si el tiempo de retardo excede la cobertura inercial actual:
+
+$$
+L_t \ge C
+$$
+
+Donde $L_t$ representa el `lead_time_proveedor` extraído de la Logística Plana, operando como tensor de resistencia.
+
+---
+
+## 3. Liberación de Stock: Freno Termodinámico y Drenaje
+
+Un activo (lote de SKU) exige una ruta de evacuación rápida hacia el Marketplace cuando su campo escalar de estancia (retención de capital en estante) entra en colisión directa con una grave desaceleración en el mercado local.
+
+### Límite de Frontera Reactivo
+Se establece la regla de intervención sistémica si confluyen de manera síncrona las siguientes dos barreras termodinámicas:
+1. $v_s < v_{umb}$: La derivada de demanda (velocidad de salida actual) decae por debajo de la velocidad de umbral requerida para rentabilidad.
+2. $\tau > \tau_{lim}$: El tiempo de estancia $\tau$ superó el límite energético máximo tolerable antes de incurrir en decaimiento radiactivo financiero.
+
+**Resolución Algebraica:**
+Se computa una transmutación determinista del `precio_actual` hacia el `costo_reposicion_esperado`, inyectando al SKU en una tubería de Marketplace con descuento de emergencia, forzando la recuperación absoluta del volumen de capital antes de su total congelamiento.
+
+---
+
+## 4. Correlación y Expansión Tensorial de Ticket
+
+La frecuencia de co-ocurrencia transaccional genera una matriz de afinidad térmica entre pares de activos en el grafo del retail.
+
+Si un producto en estado de entropía alta $A$ (estancado) y un producto activo $B$ (de altísima velocidad) cumplen la inecuación de proximidad térmica cruzada:
+
+$$
+\text{corr}(A, B) \ge \text{corr}_{umb}
+$$
+
+El motor termodinámico de APEX sintetizará un vector ortogonal transitorio (un "Combo" dinámico B2C/B2B), aprovechando el gradiente de liquidez del producto $B$ para succionar el flujo estancado del producto $A$, reduciendo drásticamente la fricción global del sistema y manteniendo a cero la necesidad de cálculos espaciales volumétricos.

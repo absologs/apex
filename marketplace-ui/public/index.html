@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ImportVCB</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            base: '#131921',
+                            light: '#232f3e',
+                            accent: '#F26430', /* Fusion Orange instead of Amazon yellow to match ecosystem */
+                            accentHover: '#E05A20',
+                            bg: '#F2F4F8',
+                            border: '#E5E7EB'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { display: none; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    </style>
+</head>
+<body class="bg-brand-bg text-gray-900 font-sans antialiased min-h-screen pb-20 md:pb-10 pt-safe">
+    
+    <!-- Top Nav Responsive -->
+    <header class="w-full fixed top-0 z-40 shadow-sm flex flex-col">
+        <!-- Main Navbar -->
+        <div class="bg-brand-base text-white px-3 md:px-6 py-3 flex items-center justify-between gap-3 md:gap-6 w-full">
+            <!-- Logo / Menu -->
+            <div class="flex items-center gap-3">
+                <button class="md:hidden text-white p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div class="font-bold text-xl md:text-2xl tracking-tight text-white flex items-center gap-1">
+                    ImportVCB
+                </div>
+            </div>
+
+            <!-- Search Bar (Hidden on very small screens, integrated below or flexible) -->
+            <div class="hidden sm:flex flex-1 items-center rounded-lg overflow-hidden bg-white max-w-3xl border focus-within:border-brand-accent focus-within:ring-1 focus-within:ring-brand-accent transition-all">
+                <input type="text" placeholder="Buscar productos y referencias..." class="flex-1 px-4 py-2.5 text-gray-800 outline-none text-sm">
+                <button class="bg-brand-accent hover:bg-brand-accentHover px-5 py-2.5 text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center gap-4 md:gap-6">
+                <!-- User Profile (Desktop) -->
+                <div class="hidden md:flex flex-col cursor-pointer leading-tight">
+                    <span class="text-gray-400 text-xs">Bienvenido</span>
+                    <span class="font-bold text-sm">Identifícate</span>
+                </div>
+
+                <!-- Tasa Dólar Widget -->
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider">Tasa Oficial</span>
+                    <div class="font-bold text-sm md:text-base text-brand-accent flex items-center gap-1">
+                        <span id="header-tasa-bcv">--</span>
+                        <span class="text-[10px] text-gray-300">Bs/USD</span>
+                    </div>
+                </div>
+
+                <!-- Cart -->
+                <button onclick="toggleCart()" class="relative flex items-center justify-center p-2 rounded-lg hover:bg-white/10 transition-colors">
+                    <svg class="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-brand-accent text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 rounded-full shadow-md">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Search Bar (Only visible on small screens) -->
+        <div class="sm:hidden bg-brand-light px-3 py-2 w-full">
+            <div class="flex items-center rounded-lg overflow-hidden bg-white w-full border focus-within:border-brand-accent">
+                <input type="text" placeholder="Buscar..." class="flex-1 px-3 py-2 text-gray-800 outline-none text-sm w-full">
+                <button class="bg-brand-accent px-4 py-2 text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sub Navbar -->
+        <div class="bg-brand-light text-gray-300 px-3 md:px-6 flex items-center gap-4 md:gap-6 h-10 w-full text-xs md:text-sm overflow-x-auto whitespace-nowrap hide-scrollbar">
+            <a href="#" class="font-medium hover:text-white transition-colors">Ofertas ImportVCB</a>
+            <a href="#" class="font-medium hover:text-white transition-colors">Consumo Masivo</a>
+            <a href="#" class="font-medium hover:text-white transition-colors">Tecnología</a>
+            <a href="#" class="font-medium hover:text-white transition-colors">Historial de Algoritmo</a>
+        </div>
+    </header>
+
+    <!-- Spacer for fixed header -->
+    <div class="h-32 sm:h-28"></div>
+
+    <!-- Main Content -->
+    <main class="w-full max-w-7xl mx-auto px-3 md:px-6 py-6">
+        
+        <!-- Premium Hero Section -->
+        <div class="w-full rounded-2xl bg-gradient-to-br from-[#1c2431] to-brand-base text-white p-6 md:p-10 mb-8 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+            <div class="absolute -right-20 -top-20 w-64 h-64 bg-brand-accent opacity-10 rounded-full blur-3xl"></div>
+            <div class="z-10 flex-1">
+                <h1 class="text-2xl md:text-4xl font-bold tracking-tight mb-3">Precios Optimizados.</h1>
+                <p class="text-gray-400 text-sm md:text-base max-w-lg mb-6">El motor determinista calcula en tiempo real los costos de reposición para ofrecerte el margen más competitivo.</p>
+                <button class="bg-white text-brand-base px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-sm">
+                    Ver proyecciones
+                </button>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-6 px-1">Recomendados del Motor</h2>
+
+        <!-- Product Grid Container -->
+        <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+            <!-- Dynamic Injection -->
+        </div>
+    </main>
+
+    <!-- Cart Overlay -->
+    <div id="cart-panel" class="fixed inset-0 z-50 bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm">
+        <div id="cart-content" class="absolute top-0 right-0 w-full md:w-[400px] h-full bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col rounded-l-2xl overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                <h2 class="text-xl font-bold text-gray-800">Tu Cesta</h2>
+                <button onclick="toggleCart()" class="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+                <!-- Items -->
+            </div>
+            
+            <div class="p-6 border-t border-gray-100 bg-white">
+                <div class="flex justify-between items-end mb-6">
+                    <span class="text-gray-500 font-medium">Subtotal</span>
+                    <span id="cart-total" class="text-2xl font-bold text-gray-900">$0.00</span>
+                </div>
+                <button onclick="openCheckout()" class="w-full bg-brand-accent hover:bg-brand-accentHover text-white py-3.5 rounded-xl font-bold text-base shadow-lg shadow-brand-accent/20 transition-all active:scale-[0.98]">
+                    Procesar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/70 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 md:p-8 rounded-2xl max-w-md w-full shadow-2xl animate-fade-in">
+            <div class="flex items-center justify-center w-12 h-12 bg-brand-accent/10 text-brand-accent rounded-full mb-5 mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-center mb-2">Transacción Segura</h2>
+            <p class="text-gray-500 text-center text-sm mb-8 leading-relaxed">El flujo de pago está garantizado por la inmutabilidad del Nodo Central ImportVCB.</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="executePayment()" class="w-full py-3 bg-brand-base hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition-colors">Confirmar Transacción</button>
+                <button onclick="closeCheckout()" class="w-full py-3 bg-gray-50 text-gray-600 border border-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-100 transition-colors">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Adjust grid rendering in app.js if needed to match new premium cards,
+        // we can override renderProducts here temporarily to fix the UI design immediately
+        const oldRender = typeof renderProducts !== 'undefined' ? renderProducts : null;
+        if (oldRender) {
+            window.renderProducts = function() {
+                const grid = document.getElementById('product-grid');
+                if (!grid) return;
+                if (typeof state !== 'undefined' && state.products.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-16 flex flex-col items-center"><svg class="w-12 h-12 mb-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>Sincronizando topología...</div>';
+                    return;
+                }
+                grid.innerHTML = state.products.map(product => `
+                    <div class="bg-white rounded-2xl border border-brand-border overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col relative group">
+                        <div class="aspect-[4/3] bg-gray-50 overflow-hidden relative flex items-center justify-center p-6 border-b border-brand-border">
+                            <span class="text-gray-300 font-extrabold text-3xl uppercase tracking-widest opacity-30 transform group-hover:scale-110 transition-transform duration-500">${product.name.substring(0,2)}</span>
+                            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-md shadow-sm text-green-600">Stock</div>
+                        </div>
+                        <div class="p-4 flex-1 flex flex-col">
+                            <h3 class="font-semibold text-gray-800 text-sm md:text-base leading-tight line-clamp-2 mb-1">${product.name}</h3>
+                            <p class="text-xs text-gray-400 mb-3">${product.category}</p>
+                            
+                            <div class="mt-auto pt-2 flex items-end justify-between">
+                                <div>
+                                    <span class="text-[10px] text-gray-400 uppercase font-semibold">Valor Unitario</span>
+                                    <div class="font-bold text-lg md:text-xl text-gray-900">${formatPrecision(product.price)}</div>
+                                </div>
+                                <button class="w-10 h-10 rounded-full bg-brand-bg hover:bg-brand-accent hover:text-white text-gray-600 flex items-center justify-center transition-colors shadow-sm" onclick="addToCart('${product.id}')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+        }
+    </script>
+</body>
+</html>

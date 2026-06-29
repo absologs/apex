@@ -1,8 +1,11 @@
 pub mod arrow_transport;
+pub mod engine;
 pub mod erp;
 pub mod ingest;
 pub mod ledger;
+pub mod marketplace;
 pub mod models;
+pub mod nodes;
 pub mod oracle;
 pub mod playbook;
 pub mod stream;
