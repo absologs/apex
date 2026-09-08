@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DatioLabs Retail",
+  "version": "0.1.0",
+  "identifier": "com.datiolabs.retail",
+  "build": {
+    "beforeDevCommand": "npm run dev --prefix ../ui",
+    "beforeBuildCommand": "npm run build --prefix ../ui",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "DatioLabs Enterprise",
+        "width": 1280,
+        "height": 850,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "visible": true,
+        "theme": "Light"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "nsis": {
+      "template": "installer.nsi",
+      "installerIcon": "icons/icon.ico",
+      "headerImage": "icons/header.bmp",
+      "license": "LICENSE",
+      "welcomeImage": "icons/welcome.bmp",
+      "displayLanguageSelector": false,
+      "allowElevatedProcess": true,
+      "perMachine": false,
+      "oneClick": false,
+      "preCompressed": false,
+      "includeStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "createUninstaller": true
+    }
+  }
+}

@@ -1,0 +1,23 @@
+name = "datiolabs-api"
+main = "src/index.js"
+compatibility_date = "2024-03-20"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "datiolabs-db-local"
+database_id = "4e095afa-d2d3-483e-a979-1f6900878089"
+
+[[queues.producers]]
+binding = "METRICS_QUEUE"
+queue = "datiolabs-metrics-queue"
+
+[[durable_objects.bindings]]
+name = "REALTIME_WS"
+class_name = "DatioLabsRealtimeDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DatioLabsRealtimeDO"]
+
+[triggers]
+crons = ["* * * * *"]

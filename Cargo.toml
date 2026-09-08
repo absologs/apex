@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "datiolabs-api",
+    "datiolabs-core",
+    "datiolabs-driver-csv",
+    "datiolabs-ui"
+]
+resolver = "2"

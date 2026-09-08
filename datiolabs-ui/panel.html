@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DatioLabs Panel</title>
+    <style>
+        :root {
+            --bg: #f4f3ef;
+            --card: #ffffff;
+            --text: #1a202c;
+            --muted: #64748b;
+            --border: #1e293b;
+            --accent: #0284c7;
+            --green: #15803d;
+            --red: #b91c1c;
+            --yellow: #b45309;
+            --shadow: 3px 3px 0px #1e293b;
+            --shadow-sm: 2px 2px 0px #1e293b;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .card { background:var(--card); border:2px solid var(--border); border-radius:4px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow-sm); }
+        .btn { padding:12px 20px; border-radius:4px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.05em; border:2px solid var(--border); cursor:pointer; box-shadow:var(--shadow-sm); transition:transform .1s, box-shadow .1s; }
+        .btn:active { transform:translate(2px,2px); box-shadow:none; }
+        .btn-primary { background:#0f172a; color:#ffffff; }
+        .btn-ghost { background:#ffffff; color:var(--text); }
+        .input { width:100%; padding:12px; border-radius:4px; border:2px solid var(--border); background:#ffffff; color:var(--text); font-size:16px; font-weight:600; box-shadow:inset 1px 1px 0px rgba(0,0,0,.08); }
+        .stat { text-align:center; }
+        .stat-value { font-size:24px; font-weight:900; font-variant-numeric:tabular-nums; }
+        .stat-label { color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:4px; }
+        .green { color:var(--green); } .red { color:var(--red); } .yellow { color:var(--yellow); }
+        .row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #e2e8f0; }
+        .row:last-child { border-bottom:none; }
+        .badge { padding:2px 8px; border-radius:3px; font-size:11px; font-weight:800; border:1px solid var(--border); text-transform:uppercase; }
+        .badge-red { background:#fee2e2; color:#991b1b; }
+        .badge-green { background:#dcfce7; color:#166534; }
+        .badge-blue { background:#e0f2fe; color:#075985; }
+        .badge-yellow { background:#fef9c3; color:#854d0e; }
+        #login { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+        .pin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+        .pin-btn { aspect-ratio:1; font-size:24px; font-weight:800; background:#ffffff; border:2px solid var(--border); color:var(--text); border-radius:4px; box-shadow:var(--shadow-sm); cursor:pointer; }
+        .pin-btn:active { transform:translate(2px,2px); box-shadow:none; }
+        .hidden { display:none !important; }
+        .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#ffffff; color:var(--text); border:2px solid var(--border); padding:12px 20px; border-radius:4px; z-index:100; opacity:0; transition:opacity .3s; font-weight:700; box-shadow:var(--shadow); }
+        .toast.show { opacity:1; }
+        .tasa-value { font-size:36px; font-weight:900; text-align:center; font-variant-numeric:tabular-nums; }
+        .tasa-fluct { font-size:15px; font-weight:800; text-align:center; margin-top:4px; }
+        .chart-wrap { height:180px; position:relative; }
+        .fab { position:fixed; bottom:20px; right:20px; width:52px; height:52px; border-radius:4px; background:#ffffff; color:var(--text); border:2px solid var(--border); font-size:22px; font-weight:900; box-shadow:var(--shadow); z-index:50; cursor:pointer; }
+        .fab:active { transform:translate(2px,2px); box-shadow:none; }
+        .modal { position:fixed; inset:0; background:rgba(30,41,59,.6); display:flex; align-items:flex-end; z-index:200; opacity:0; pointer-events:none; transition:opacity .2s; }
+        .modal.show { opacity:1; pointer-events:auto; }
+        .modal-content { background:#ffffff; border-top:3px solid var(--border); border-radius:8px 8px 0 0; padding:20px; width:100%; max-height:80vh; overflow:auto; transform:translateY(100%); transition:transform .2s; box-shadow:0 -4px 12px rgba(0,0,0,.1); }
+        .modal.show .modal-content { transform:translateY(0); }
+        .modal-handle { width:40px; height:4px; background:#cbd5e1; border-radius:2px; margin:0 auto 16px; }
+        .sse-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--green); border:1.5px solid var(--border); margin-left:6px; vertical-align:middle; }
+        .sse-dot.off { background:var(--red); }
+    </style>
+</head>
+<body>
+    <div id="login">
+        <div class="card" style="width:100%;max-width:360px;">
+            <div style="text-align:center;margin-bottom:24px;">
+                <h1 style="font-size:20px;font-weight:700;">Panel</h1>
+                <p style="color:var(--muted);font-size:13px;margin-top:4px;">PIN para acceder</p>
+            </div>
+            <input type="password" id="pin-input" class="input" style="text-align:center;letter-spacing:.5em;" placeholder="---" maxlength="6" autocomplete="one-time-code">
+            <div class="pin-grid" id="pin-grid">
+                <button class="pin-btn" data-num="1">1</button>
+                <button class="pin-btn" data-num="2">2</button>
+                <button class="pin-btn" data-num="3">3</button>
+                <button class="pin-btn" data-num="4">4</button>
+                <button class="pin-btn" data-num="5">5</button>
+                <button class="pin-btn" data-num="6">6</button>
+                <button class="pin-btn" data-num="7">7</button>
+                <button class="pin-btn" data-num="8">8</button>
+                <button class="pin-btn" data-num="9">9</button>
+                <button class="pin-btn" id="pin-clear" aria-label="Borrar">&larr;</button>
+                <button class="pin-btn" data-num="0">0</button>
+                <button class="pin-btn btn-primary" id="pin-enter" style="grid-column:span 2;">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="hidden">
+        <header style="position:sticky;top:0;z-index:40;background:#ffffff;border-bottom:2px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="font-weight:900;font-size:16px;letter-spacing:.02em;text-transform:uppercase;">DatioLabs <span class="sse-dot" id="sse-dot" title="conexion"></span></div>
+            <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" id="logout-btn">Salir</button>
+        </header>
+
+        <main style="max-width:600px;margin:0 auto;padding:16px 16px 80px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+                <div class="card stat"><div class="stat-value" style="color:#0369a1;" id="v-usd">$0</div><div class="stat-label">USD 24h</div></div>
+                <div class="card stat"><div class="stat-value" style="color:#15803d;" id="v-bsf">Bs 0</div><div class="stat-label">Bs 24h</div></div>
+                <div class="card stat"><div class="stat-value" style="color:#b45309;" id="v-tickets">0</div><div class="stat-label">Tickets</div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.04em;">Tasa BCV Oficial</span>
+                    <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;" id="tasa-fuente">BCV</span>
+                </div>
+                <div class="tasa-value" id="tasa-valor">&mdash;</div>
+                <div class="tasa-fluct" id="tasa-fluct">&mdash;</div>
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;">
+                    <button class="btn btn-primary" style="padding:10px 16px;flex:1;" id="btn-refrescar">Refrescar</button>
+                    <button class="btn btn-ghost" style="padding:10px 16px;flex:1;" id="btn-manual">Manual</button>
+                </div>
+                <div id="tasa-pendiente" class="hidden" style="margin-top:12px;padding:12px;background:#f8fafc;border:2px solid var(--border);border-radius:4px;font-size:13px;">
+                    <div style="color:var(--muted);font-weight:700;text-transform:uppercase;font-size:11px;">Tasa Encontrada:</div>
+                    <div style="font-weight:900;font-size:18px;margin-top:2px;" id="pend-val"></div>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <button class="btn btn-primary" style="padding:8px 12px;font-size:12px;flex:1;" id="btn-aplicar">Confirmar</button>
+                        <button class="btn btn-ghost" style="padding:8px 12px;font-size:12px;flex:1;" id="btn-descartar">Descartar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-weight:600;">Inventario</span>
+                    <span style="font-size:13px;" id="inv-valor">$0</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div class="stat"><div class="stat-value red" id="inv-criticos">0</div><div class="stat-label">Criticos</div></div>
+                    <div class="stat"><div class="stat-value" id="inv-total">0</div><div class="stat-label">Productos</div></div>
+                </div>
+                <div id="criticos-list" style="max-height:160px;overflow:auto;"></div>
+            </div>
+
+            <div class="card">
+                <div style="font-weight:600;margin-bottom:8px;">Cuentas Abiertas</div>
+                <div id="cuentas-list"><div style="text-align:center;color:var(--muted);padding:16px;">Sin cuentas</div></div>
+            </div>
+
+            <div class="card">
+                <div style="font-weight:600;margin-bottom:8px;">Top Productos 24h</div>
+                <div class="chart-wrap"><canvas id="top-chart"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;">Stock de Productos</span>
+                    <span style="font-size:11px;font-weight:700;color:var(--muted);" id="stock-count">0 items</span>
+                </div>
+                <input type="text" id="buscar-stock" maxlength="64" class="input" style="padding:8px 12px;font-size:14px;margin-bottom:10px;" placeholder="Buscar por nombre o SKU (máx 64)...">
+                <div id="stock-list" style="max-height:240px;overflow:auto;"></div>
+            </div>
+        </main>
+
+        <button class="fab" id="fab-refresh" aria-label="Actualizar">&#x21bb;</button>
+
+        <div class="modal" id="modal-manual">
+            <div class="modal-content">
+                <div class="modal-handle"></div>
+                <h3 style="font-weight:600;margin-bottom:12px;">Tasa Manual</h3>
+                <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Bs/USD (ej: 36.50)</p>
+                <input type="text" id="manual-input" maxlength="16" class="input" placeholder="36.50" inputmode="decimal">
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button class="btn btn-primary" style="flex:1;" id="btn-guardar-manual">Guardar</button>
+                    <button class="btn btn-ghost" style="flex:1;" id="btn-cancelar-manual">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let topChart = null;
+        let evtSource = null;
+
+        function showToast(msg, err) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.borderColor = err ? '#ef4444' : '#334155';
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        async function api(path, opts) {
+            const res = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts && opts.headers || {}) }, credentials: 'include' });
+            if (res.status === 401) { logout(); throw new Error('401'); }
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        }
+
+        function fmtUsd(n) { return '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fmtBs(n) { return 'Bs ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        const pinInput = document.getElementById('pin-input');
+        document.getElementById('pin-grid').addEventListener('click', e => {
+            const b = e.target.closest('button');
+            if (!b) return;
+            if (b.id === 'pin-clear') { pinInput.value = pinInput.value.slice(0, -1); return; }
+            if (b.id === 'pin-enter') { doLogin(); return; }
+            if (b.dataset.num && pinInput.value.length < 6) pinInput.value += b.dataset.num;
+        });
+
+        async function doLogin() {
+            if (pinInput.value.length < 4) return showToast('PIN corto', true);
+            try {
+                const r = await api('/auth/login', { method: 'POST', body: JSON.stringify({ pin: pinInput.value }) });
+                if (r.ok) { showApp(); } else showToast(r.message, true);
+            } catch (e) { showToast('Conexion fallida', true); }
+        }
+
+        function showApp() {
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            loadAll();
+            startSSE();
+        }
+
+        function logout() {
+            api('/auth/logout', { method: 'POST' }).catch(() => {});
+            if (evtSource) { evtSource.close(); evtSource = null; }
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('login').classList.remove('hidden');
+            pinInput.value = '';
+            pinInput.focus();
+        }
+
+        document.getElementById('logout-btn').onclick = logout;
+
+        async function loadAll() {
+            try {
+                const [panel, tasa, pend, cuentas, productos] = await Promise.all([
+                    api('/panel'), api('/tasa'), api('/tasa/pendiente'), api('/cuentas'), api('/productos')
+                ]);
+                renderPanel(panel);
+                renderTasa(tasa, pend);
+                renderCuentas(cuentas);
+                renderProductos(productos);
+            } catch (e) { console.error(e); showToast('Error cargando datos', true); }
+        }
+
+        function renderPanel(p) {
+            document.getElementById('v-usd').textContent = fmtUsd(p.ventas_24h_usd);
+            document.getElementById('v-bsf').textContent = fmtBs(p.ventas_24h_bs);
+            document.getElementById('v-tickets').textContent = Number(p.tickets_24h).toLocaleString();
+            document.getElementById('inv-valor').textContent = fmtUsd(p.valor_inventario_usd);
+            document.getElementById('inv-criticos').textContent = p.criticos_len;
+            document.getElementById('inv-total').textContent = p.total_productos;
+
+            const cl = document.getElementById('criticos-list');
+            if (!p.criticos_len) {
+                cl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px;">Sin criticos</div>';
+            } else {
+                let h = '';
+                for (let i = 0; i < p.criticos_len; i++) {
+                    const c = p.criticos[i];
+                    h += '<div class="row"><div><strong>' + c.nombre + '</strong><br><span style="font-size:11px;color:var(--muted);">' + c.sku + '</span></div><span class="badge badge-red">' + c.stock + '</span></div>';
+                }
+                cl.innerHTML = h;
+            }
+
+            renderTopChart(p.top_productos, p.top_productos_len);
+        }
+
+        function renderTasa(tasa, pend) {
+            if (tasa && tasa.valor > 0) {
+                document.getElementById('tasa-valor').textContent = Number(tasa.valor).toFixed(2);
+                const fl = document.getElementById('tasa-fluct');
+                if (tasa.fluctuacion_pct != null) {
+                    const pct = Number(tasa.fluctuacion_pct).toFixed(2);
+                    fl.className = 'tasa-fluct ' + (tasa.direccion === 'subio' ? 'green' : tasa.direccion === 'bajo' ? 'red' : '');
+                    fl.textContent = (tasa.direccion === 'subio' ? '\\u25B2 ' : tasa.direccion === 'bajo' ? '\\u25BC ' : '') + pct + '%';
+                } else {
+                    fl.textContent = 'Sin dato anterior';
+                    fl.className = 'tasa-fluct';
+                }
+                document.getElementById('tasa-fuente').textContent = tasa.fuente || 'BCV';
+            } else {
+                document.getElementById('tasa-valor').textContent = '\\u2014';
+                document.getElementById('tasa-fluct').textContent = 'Sin tasa';
+            }
+            const pd = document.getElementById('tasa-pendiente');
+            const pv = document.getElementById('pend-val');
+            if (pend && pend.valor > 0) {
+                pd.classList.remove('hidden');
+                pv.textContent = Number(pend.valor).toFixed(2) + ' Bs/USD';
+            } else {
+                pd.classList.add('hidden');
+            }
+        }
+
+        function renderCuentas(cuentas) {
+            const cl = document.getElementById('cuentas-list');
+            if (!cuentas.length) { cl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;">Sin cuentas</div>'; return; }
+            let h = '';
+            for (const c of cuentas) {
+                h += '<div class="row"><div><strong>' + c.etiqueta + '</strong><br><span style="font-size:11px;color:var(--muted);">' + c.lineas + ' items &middot; $' + Number(c.total_parcial_usd).toFixed(2) + '</span></div><span style="font-weight:600;">' + Number(c.total_parcial_bs).toFixed(2) + '</span></div>';
+            }
+            cl.innerHTML = h;
+        }
+
+        let listaProductosCache = [];
+
+        function renderProductos(productos) {
+            listaProductosCache = productos || [];
+            filtrarYRenderizarStock();
+        }
+
+        function filtrarYRenderizarStock() {
+            const query = (document.getElementById('buscar-stock').value || '').trim().toLowerCase();
+            const sl = document.getElementById('stock-list');
+            const sc = document.getElementById('stock-count');
+            
+            const filtrados = listaProductosCache.filter(p => 
+                p.nombre.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)
+            );
+            
+            sc.textContent = filtrados.length + ' de ' + listaProductosCache.length;
+
+            let h = '';
+            for (const p of filtrados) {
+                const isCrit = p.stock <= 5;
+                const caps = [];
+                if (p.capacidades & 2) caps.push('P');
+                if (p.capacidades & 4) caps.push('Pe');
+                if (p.capacidades & 8) caps.push('C');
+                if (p.capacidades & 16) caps.push('S');
+                if (p.capacidades & 32) caps.push('V');
+                if (p.capacidades & 64) caps.push('G');
+                if (p.capacidades & 128) caps.push('Co');
+                const tag = caps.length ? '<span style="font-size:10px;color:var(--muted);">' + caps.join(' ') + '</span> ' : '';
+                h += '<div class="row"><div><strong>' + p.nombre + '</strong><br><span style="font-size:11px;color:var(--muted);">' + p.sku + ' &middot; $' + Number(p.precio_usd).toFixed(2) + ' ' + tag + '</span></div><span class="badge ' + (isCrit ? 'badge-red' : 'badge-green') + '">' + p.stock + '</span></div>';
+            }
+            sl.innerHTML = h || '<div style="text-align:center;color:var(--muted);padding:12px;">Sin coincidencias</div>';
+        }
+
+        document.getElementById('buscar-stock').addEventListener('input', filtrarYRenderizarStock);
+
+        function renderTopChart(top, len) {
+            const ctx = document.getElementById('top-chart').getContext('2d');
+            const labels = [];
+            const data = [];
+            for (let i = 0; i < len; i++) {
+                const n = top[i].nombre;
+                labels.push(n.length > 12 ? n.slice(0, 12) + '\\u2026' : n);
+                data.push(Number(top[i].cantidad));
+            }
+            if (topChart) topChart.destroy();
+            topChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Unidades', data, backgroundColor: '#22d3ee', borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } }
+            });
+        }
+
+        function startSSE() {
+            if (evtSource) evtSource.close();
+            evtSource = new EventSource(API + '/events');
+            const dot = document.getElementById('sse-dot');
+            dot.className = 'sse-dot';
+            evtSource.onopen = () => { dot.className = 'sse-dot'; };
+            evtSource.onerror = () => { dot.className = 'sse-dot off'; };
+            evtSource.addEventListener('panel-update', () => { loadAll(); });
+        }
+
+        document.getElementById('btn-refrescar').onclick = async () => {
+            try { await api('/tasa', { method: 'GET' }); showToast('Tasa refrescada'); loadAll(); } catch (e) { showToast('Error', true); }
+        };
+        document.getElementById('btn-manual').onclick = () => { document.getElementById('modal-manual').classList.add('show'); document.getElementById('manual-input').focus(); };
+        document.getElementById('btn-aplicar').onclick = async () => {
+            try { await api('/tasa/aplicar', { method: 'POST' }); showToast('Tasa aplicada'); loadAll(); } catch (e) { showToast('Error', true); }
+        };
+        document.getElementById('btn-descartar').onclick = () => { document.getElementById('tasa-pendiente').classList.add('hidden'); };
+        document.getElementById('btn-guardar-manual').onclick = async () => {
+            const v = document.getElementById('manual-input').value.trim();
+            if (!v) return showToast('Valor requerido', true);
+            try { await api('/tasa/manual', { method: 'POST', body: JSON.stringify({ valor: v }) }); showToast('Guardada'); document.getElementById('modal-manual').classList.remove('show'); document.getElementById('manual-input').value = ''; loadAll(); } catch (e) { showToast('Error', true); }
+        };
+        document.getElementById('btn-cancelar-manual').onclick = () => { document.getElementById('modal-manual').classList.remove('show'); };
+        document.getElementById('fab-refresh').onclick = loadAll;
+        document.querySelectorAll('.modal').forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove('show'); });
+        pinInput.focus();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</body>
+</html>

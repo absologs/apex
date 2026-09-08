@@ -1,0 +1,48 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+
+# Databases (Local State & Snapshots)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+datiolabs_db_kv/
+datiolabs_db/
+
+# OS / IDE / Editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment & Secrets
+.env
+.env.*
+!.env.template
+
+# Node / Frontend
+node_modules/
+dist/
+.pnpm-debug.log*
+
+# Tauri específicos
+datiolabs-ui/gen/
+ui/dist/
+
+# Logs de error y ejecución
+*.log
+ui_error.log
+error.log
+
+# Android & APKs
+apks_finales/
+releases/
+*.apk
+*.aab
+gen-android/
+ui/src-tauri/gen/android/
+datiolabs-ui/src-tauri/gen/android/
+marketplace-ui/src-tauri/gen/android/
+cloudflare

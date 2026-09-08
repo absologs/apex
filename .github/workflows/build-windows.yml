@@ -1,0 +1,68 @@
+name: Build & Release Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './ -> target'
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd ui
+          npm ci
+
+      - name: Build Frontend
+        run: |
+          cd ui
+          npm run build
+
+      - name: Install Tauri CLI
+        run: |
+          cargo install tauri-cli --version "^2.0.0" --locked
+
+      - name: Build Tauri Windows Installer
+        run: |
+          cd datiolabs-ui
+          cargo tauri build --target x86_64-pc-windows-msvc
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DatioLabs-Retail-Windows-Installer
+          path: target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          draft: false
+          prerelease: false
+          generate_release_notes: true

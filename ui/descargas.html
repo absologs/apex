@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DatioLabs Enterprise | Descargas Oficiales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#F4F3EF',
+                            black: '#1E232A',
+                            pink: '#2563EB',
+                            yellow: '#D97706',
+                            cyan: '#0284C7',
+                            purple: '#0F172A',
+                            gray: '#E5E4DE',
+                            text: '#1E232A'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Outfit', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'brutal': '4px 4px 0px 0px rgba(10, 10, 10, 1)',
+                        'brutal-sm': '2px 2px 0px 0px rgba(10, 10, 10, 1)',
+                        'brutal-hover': '6px 6px 0px 0px rgba(10, 10, 10, 1)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="antialiased min-h-screen flex flex-col bg-brand-bg text-brand-black font-body selection:bg-brand-pink selection:text-brand-black">
+
+    <nav class="bg-white border-b-2 border-brand-black px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-black font-heading tracking-tight">DatioLabs<span class="text-brand-pink">.</span></h1>
+            <span class="bg-brand-yellow text-brand-black text-[10px] font-bold px-2 py-1 rounded-full border border-brand-black uppercase tracking-wider ml-2 shadow-brutal-sm">Enterprise Data Product</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="/demo" class="font-heading font-bold bg-white border-2 border-brand-black px-4 py-2 rounded shadow-brutal hover:shadow-brutal-hover hover:-translate-y-0.5 transition-all">
+                Probar Demo en Vivo &rarr;
+            </a>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-12 flex flex-col items-center text-center">
+        <div class="inline-block bg-blue-100 border-2 border-brand-black px-3 py-1 rounded-full text-xs font-heading font-bold uppercase tracking-wider mb-4 shadow-brutal-sm">
+            Distribución Local-First para Windows
+        </div>
+        <h2 class="text-5xl font-black font-heading mb-4 tracking-tight leading-tight">
+            Gestión Empresarial Determinista y Control Comercial
+        </h2>
+        <p class="text-lg text-gray-700 max-w-2xl mb-8 font-body">
+            Arquitectura de datos estructurados, inventario atómico multirubro (Abasto, Panadería, Licorería y Retail con series) y auditoría criptográfica SHA-256 sin bases de datos externas.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl text-left my-6">
+            <!-- Tarjeta Descarga Windows -->
+            <div class="bg-white border-2 border-brand-black rounded-lg p-6 shadow-brutal flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-black uppercase px-2 py-1 rounded bg-emerald-100 border border-brand-black">Producción</span>
+                        <span class="text-xs font-mono text-gray-500 font-bold">v0.1.0-win64</span>
+                    </div>
+                    <h3 class="text-2xl font-black font-heading mb-2">DatioLabs para Windows</h3>
+                    <p class="text-sm text-gray-600 mb-6">
+                        Instalador oficial nativo para Windows 10 y 11 (64-bit). Persistencia local Sled embebida, tasa oficial automática y enlace móvil P2P.
+                    </p>
+                </div>
+                <div>
+                    <a href="https://github.com/absologs/apex/releases/download/v0.1.0-release/DatioLabs-Retail-Setup.exe" class="w-full bg-brand-black text-white font-heading font-black py-4 rounded border-2 border-brand-black shadow-brutal hover:-translate-y-0.5 hover:shadow-brutal-hover active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-2">
+                        <span>DESCARGAR INSTALADOR (.EXE)</span>
+                    </a>
+                    <div class="mt-2 text-center">
+                        <a href="https://github.com/absologs/apex/releases/download/v0.1.0-release/DatioLabs-Retail-Setup.exe.sha256" target="_blank" class="text-[11px] text-gray-500 hover:text-brand-black underline font-mono">Ver Hash SHA-256 Oficial</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta Demo Cloudflare -->
+            <div class="bg-white border-2 border-brand-black rounded-lg p-6 shadow-brutal flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-black uppercase px-2 py-1 rounded bg-amber-100 border border-brand-black">En la Web</span>
+                        <span class="text-xs font-mono text-gray-500 font-bold">Edge Sandbox</span>
+                    </div>
+                    <h3 class="text-2xl font-black font-heading mb-2">Demostración Interactiva</h3>
+                    <p class="text-sm text-gray-600 mb-6">
+                        Prueba el software completo directamente en tu navegador. Factura en caja, cambia tasas, crea productos y consulta los KPIs comerciales en memoria.
+                    </p>
+                </div>
+                <div class="space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/licoreria" class="bg-blue-600 text-white font-heading font-black py-3 rounded border-2 border-brand-black shadow-brutal hover:-translate-y-0.5 transition-all text-center text-sm">
+                            LICORERÍA
+                        </a>
+                        <a href="/panaderia" class="bg-amber-500 text-white font-heading font-black py-3 rounded border-2 border-brand-black shadow-brutal hover:-translate-y-0.5 transition-all text-center text-sm">
+                            PANADERÍA
+                        </a>
+                    </div>
+                    <p class="text-[11px] text-gray-500 text-center mt-2 font-mono">Ejecución 100% idéntica sin instalar nada</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 border-t-2 border-brand-black pt-6 w-full text-center text-xs text-gray-500 font-bold uppercase tracking-wider">
+            DatioLabs Enterprise &middot; Cryptographic Local-First Resource System &middot; 2026
+        </div>
+    </main>
+</body>
+</html>
