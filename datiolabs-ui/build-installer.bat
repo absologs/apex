@@ -36,21 +36,17 @@ if errorlevel 1 (
 )
 echo [OK] Cargo encontrado
 
-REM Check Node
-where node >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Node.js no encontrado. Instale v20+ desde https://nodejs.org/
-    exit /b 1
+REM Check Node / Frontend dist
+if exist "..\ui\dist\index.html" (
+    echo [OK] Frontend precompilado encontrado en ui/dist (No requiere Node ni Vite)
+    set SKIP_FRONTEND=1
+) else (
+    where node >nul 2>&1
+    if errorlevel 1 (
+        echo ERROR: Node.js no encontrado y no existe ui/dist. Instale desde https://nodejs.org/
+        exit /b 1
+    )
 )
-echo [OK] Node.js encontrado
-
-REM Check npm
-where npm >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: npm no encontrado
-    exit /b 1
-)
-echo [OK] npm encontrado
 
 echo.
 

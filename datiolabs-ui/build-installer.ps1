@@ -38,13 +38,18 @@ function Check-Prerequisites {
     if (-not $cargo) { throw "Cargo no encontrado" }
     Write-Host "  ✓ Cargo: $($cargo.Source)" -ForegroundColor Green
     
-    $node = Get-Command node -ErrorAction SilentlyContinue
-    if (-not $node) { throw "Node.js no encontrado. Instale v20+ desde https://nodejs.org/" }
-    Write-Host "  ✓ Node: $($node.Source) - $((node --version))" -ForegroundColor Green
-    
-    $npm = Get-Command npm -ErrorAction SilentlyContinue
-    if (-not $npm) { throw "npm no encontrado" }
-    Write-Host "  ✓ npm: $($npm.Source)" -ForegroundColor Green
+    if (Test-Path "..\ui\dist\index.html") {
+        Write-Host "  ✓ Frontend: Precompilado en ui/dist (No requiere Node ni Vite)" -ForegroundColor Green
+        $script:SkipFrontend = $true
+    } else {
+        $node = Get-Command node -ErrorAction SilentlyContinue
+        if (-not $node) { throw "Node.js no encontrado. Instale v20+ desde https://nodejs.org/" }
+        Write-Host "  ✓ Node: $($node.Source) - $((node --version))" -ForegroundColor Green
+        
+        $npm = Get-Command npm -ErrorAction SilentlyContinue
+        if (-not $npm) { throw "npm no encontrado" }
+        Write-Host "  ✓ npm: $($npm.Source)" -ForegroundColor Green
+    }
     
     $makensis = Get-Command makensis -ErrorAction SilentlyContinue
     if (-not $makensis) { 

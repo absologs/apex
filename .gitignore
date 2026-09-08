@@ -29,7 +29,7 @@ dist/
 
 # Tauri específicos
 datiolabs-ui/gen/
-ui/dist/
+!ui/dist/
 
 # Logs de error y ejecución
 *.log

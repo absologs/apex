@@ -4,8 +4,6 @@
   "version": "0.1.0",
   "identifier": "com.datiolabs.retail",
   "build": {
-    "beforeDevCommand": "npm run dev --prefix ../ui",
-    "beforeBuildCommand": "npm run build --prefix ../ui",
     "frontendDist": "../ui/dist"
   },
   "app": {
